@@ -11,15 +11,15 @@ const InstituteSettingsSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    default: 'Main Campus, Knowledge Park, India',
+    default: 'Ground Floor, M-24, near SBI Bank, Block M, Old DLF Colony, Sector 14, Gurugram, Haryana 122001',
   },
   latitude: {
     type: Number,
-    default: 28.470452,
+    default: 28.471764,
   },
   longitude: {
     type: Number,
-    default: 77.044462,
+    default: 77.045612,
   },
   geofenceRadius: {
     type: Number,

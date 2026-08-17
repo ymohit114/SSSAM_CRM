@@ -2,9 +2,9 @@
   "institute": {
     "name": "SSSAM Academy",
     "tagline": "Excellence in Education & Training",
-    "address": "Main Campus, Knowledge Park, India",
-    "latitude": 28.470452,
-    "longitude": 77.044462,
+    "address": "Ground Floor, M-24, near SBI Bank, Block M, Old DLF Colony, Sector 14, Gurugram, Haryana 122001",
+    "latitude": 28.471764,
+    "longitude": 77.045612,
     "geofenceRadius": 25,
     "requirePhoto": false,
     "startTime": "09:00",

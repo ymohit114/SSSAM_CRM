@@ -19,8 +19,9 @@ export default function StudentPortalPage() {
   const [institute, setInstitute] = useState({
     name: 'SSSAM Academy',
     tagline: 'Excellence in Education & Training',
-    latitude: 28.470452,
-    longitude: 77.044462,
+    address: 'Ground Floor, M-24, near SBI Bank, Block M, Old DLF Colony, Sector 14, Gurugram, Haryana 122001',
+    latitude: 28.471764,
+    longitude: 77.045612,
     geofenceRadius: 25,
     startTime: '09:00',
     lateThresholdMinutes: 15
