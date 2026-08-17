@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import Student from '@/models/Student';
+import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateDistance } from '@/lib/geo';
 import { checkStudentFeeDueStatus } from '@/lib/feeReminderService';
@@ -14,38 +16,43 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
     }
 
-    let student = db.getStudentById(studentId);
+    let student = null;
 
-    // Fallback: check MongoDB Atlas
-    if (!student) {
-      try {
-        await connectToDatabase();
-        const doc = await Student.findOne({
-          $or: [
-            ...(studentId.length === 24 ? [{ _id: studentId }] : []),
-            { rollNo: studentId }
-          ]
-        }).lean();
-
-        if (doc) {
-          student = {
-            id: doc._id.toString(),
-            rollNo: doc.rollNo,
-            name: doc.name,
-            phone: doc.phone,
-            email: doc.email,
-            password: doc.password,
-            course: doc.course,
-            feeType: doc.feeType,
-            remainingFee: doc.remainingFee,
-            dueDate: doc.dueDate,
-            status: doc.status || 'approved',
-            isApproved: doc.isApproved
-          };
-        }
-      } catch (e) {
-        console.warn('MongoDB student lookup note:', e.message);
+    // 1. Check MongoDB Atlas first
+    try {
+      await connectToDatabase();
+      const orConditions = [
+        { rollNo: { $regex: new RegExp(`^${studentId}$`, 'i') } },
+        { phone: studentId }
+      ];
+      if (mongoose.Types.ObjectId.isValid(studentId)) {
+        orConditions.push({ _id: new mongoose.Types.ObjectId(studentId) });
       }
+
+      const doc = await Student.findOne({ $or: orConditions }).lean();
+      if (doc) {
+        student = {
+          id: doc._id.toString(),
+          rollNo: doc.rollNo,
+          name: doc.name,
+          phone: doc.phone,
+          email: doc.email,
+          password: doc.password,
+          course: doc.course,
+          feeType: doc.feeType,
+          remainingFee: doc.remainingFee,
+          dueDate: doc.dueDate,
+          status: doc.status || 'approved',
+          isApproved: doc.isApproved
+        };
+      }
+    } catch (e) {
+      console.warn('MongoDB student lookup note on punch in:', e.message);
+    }
+
+    // 2. Fallback: check local db
+    if (!student) {
+      student = db.getStudentById(studentId);
     }
 
     if (!student) {
@@ -85,6 +92,35 @@ export async function POST(request) {
       selfieImg,
       status
     });
+
+    // Sync to MongoDB Attendance collection
+    try {
+      await connectToDatabase();
+      await Attendance.findOneAndUpdate(
+        {
+          $or: [
+            { studentId: student.id, date: dateStr },
+            { rollNo: student.rollNo, date: dateStr }
+          ]
+        },
+        {
+          studentId: student.id,
+          studentName: student.name,
+          rollNo: student.rollNo,
+          course: student.course,
+          date: dateStr,
+          punchInTime: timeStr,
+          punchInLat: userLat || institute.latitude,
+          punchInLng: userLng || institute.longitude,
+          punchInDistance: distance === 999999 ? 0 : distance,
+          status,
+          verified: true
+        },
+        { upsert: true, new: true }
+      );
+    } catch (e) {
+      console.warn('MongoDB attendance punch in sync note:', e.message);
+    }
 
     // Check if student has fee due within 7 days or overdue
     const feeReminder = checkStudentFeeDueStatus(student);

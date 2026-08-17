@@ -1,5 +1,9 @@
+import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import Student from '@/models/Student';
+import Attendance from '@/models/Attendance';
+import { connectToDatabase } from '@/lib/mongodb';
 import { isWithinGeofence } from '@/lib/geo';
 
 export async function GET(request, { params }) {
@@ -12,12 +16,61 @@ export async function GET(request, { params }) {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
 
-    const student = db.getStudentById(studentId);
+    let student = null;
+    let todayRecord = null;
+
+    // 1. Try finding in MongoDB Atlas
+    try {
+      await connectToDatabase();
+      const orConditions = [
+        { rollNo: { $regex: new RegExp(`^${studentId}$`, 'i') } },
+        { phone: studentId }
+      ];
+      if (mongoose.Types.ObjectId.isValid(studentId)) {
+        orConditions.push({ _id: new mongoose.Types.ObjectId(studentId) });
+      }
+
+      const doc = await Student.findOne({ $or: orConditions }).lean();
+      if (doc) {
+        student = {
+          id: doc._id.toString(),
+          rollNo: doc.rollNo,
+          name: doc.name,
+          phone: doc.phone,
+          email: doc.email,
+          course: doc.course,
+          status: doc.status || 'approved'
+        };
+
+        // Query today's attendance record from MongoDB
+        const attDoc = await Attendance.findOne({
+          $or: [
+            { studentId: doc._id.toString(), date: dateStr },
+            { rollNo: doc.rollNo, date: dateStr }
+          ]
+        }).lean();
+
+        if (attDoc) {
+          todayRecord = attDoc;
+        }
+      }
+    } catch (mongoErr) {
+      console.warn('MongoDB attendance status lookup fallback:', mongoErr.message);
+    }
+
+    // 2. Fallback to local db
+    if (!student) {
+      student = db.getStudentById(studentId);
+    }
+
+    if (!todayRecord && student) {
+      todayRecord = db.getTodayRecord(student.id, dateStr) || db.getTodayRecord(student.rollNo, dateStr);
+    }
+
     if (!student) {
       return NextResponse.json({ success: false, message: 'Student not found' }, { status: 404 });
     }
 
-    const todayRecord = db.getTodayRecord(student.id, dateStr);
     const institute = db.getInstitute();
 
     let distance = null;
