@@ -3,7 +3,7 @@
   "appName": "SSSAM Portal",
   "webDir": "public",
   "server": {
-    "url": "http://192.168.1.12:3000",
+    "url": "https://sssam-crm.vercel.app",
     "cleartext": true
   },
   "android": {
@@ -12,6 +12,14 @@
   "plugins": {
     "Geolocation": {
       "permissions": ["location"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_launcher",
+      "iconColor": "#3B82F6",
+      "sound": "default"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }

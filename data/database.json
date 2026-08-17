@@ -92,6 +92,43 @@
       "gender": "Male",
       "active": true,
       "joinDate": "2026-08-17"
+    },
+    {
+      "id": "std-1786970026622",
+      "rollNo": "SSSAM-103",
+      "name": "Sudesh",
+      "phone": "9518447689",
+      "email": "sudeshyadav@gmail.com",
+      "password": "12345678",
+      "status": "approved",
+      "isApproved": true,
+      "course": "Data Science",
+      "feeType": "installment",
+      "remainingFee": 5000,
+      "dueDate": "2026-08-13",
+      "installments": [
+        {
+          "installmentNo": 1,
+          "amount": 5000,
+          "dueDate": "2026-08-13"
+        },
+        {
+          "installmentNo": 2,
+          "amount": 5000,
+          "dueDate": "2026-09-23"
+        },
+        {
+          "installmentNo": 3,
+          "amount": 5000,
+          "dueDate": "2026-10-23"
+        }
+      ],
+      "currentInstallment": 1,
+      "totalInstallments": 3,
+      "waivedFine": 0,
+      "gender": "Male",
+      "active": true,
+      "joinDate": "2026-08-17"
     }
   ],
   "attendance": [
