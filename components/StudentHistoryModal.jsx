@@ -12,12 +12,14 @@ export default function StudentHistoryModal({ student, onClose }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!student?.id) return;
+    if (!student) return;
+    const identifier = student.id || student._id || student.rollNo;
+    if (!identifier) return;
     
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/auth/student-history/${student.id}`);
+        const res = await fetch(`/api/auth/student-history/${encodeURIComponent(identifier)}`);
         const data = await res.json();
         if (data.success) {
           setHistory(data);
