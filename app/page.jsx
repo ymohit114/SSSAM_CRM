@@ -19,8 +19,8 @@ export default function StudentPortalPage() {
     name: 'SSSAM Academy',
     tagline: 'Excellence in Education & Training',
     address: 'Ground Floor, M-24, near SBI Bank, Block M, Old DLF Colony, Sector 14, Gurugram, Haryana 122001',
-    latitude: 28.471764,
-    longitude: 77.045612,
+    latitude: 28.470455,
+    longitude: 77.044455,
     geofenceRadius: 25,
     startTime: '09:00',
     lateThresholdMinutes: 15

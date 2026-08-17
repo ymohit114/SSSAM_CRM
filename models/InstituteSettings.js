@@ -15,11 +15,11 @@ const InstituteSettingsSchema = new mongoose.Schema({
   },
   latitude: {
     type: Number,
-    default: 28.471764,
+    default: 28.470455,
   },
   longitude: {
     type: Number,
-    default: 77.045612,
+    default: 77.044455,
   },
   geofenceRadius: {
     type: Number,
