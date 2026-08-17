@@ -3,11 +3,12 @@ import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
+import { getIndianDateTime } from '@/lib/indianTime';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const dateStr = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const dateStr = searchParams.get('date') || getIndianDateTime().dateStr;
 
     let students = [];
     let logs = [];

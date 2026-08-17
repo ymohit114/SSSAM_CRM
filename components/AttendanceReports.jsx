@@ -5,6 +5,7 @@ import {
   FileSpreadsheet, Download, Printer, Filter, Calendar,
   Search, Users, Clock, MapPin, CheckCircle2
 } from 'lucide-react';
+import { formatISTTime } from '@/lib/indianTime';
 
 export default function AttendanceReports({
   institute,
@@ -232,10 +233,10 @@ export default function AttendanceReports({
                       <div className="text-[11px] font-mono text-blue-400">{log.rollNo}</div>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-emerald-400 font-semibold whitespace-nowrap">
-                      {log.punchInTime || '-'}
+                      {log.punchInTime ? formatISTTime(log.punchInTime) : '-'}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-amber-400 font-semibold whitespace-nowrap">
-                      {log.punchOutTime || '-'}
+                      {log.punchOutTime ? formatISTTime(log.punchOutTime) : '-'}
                     </td>
                     <td className="py-3.5 px-4 font-mono whitespace-nowrap">
                       {log.durationMinutes ? `${Math.floor(log.durationMinutes / 60)}h ${log.durationMinutes % 60}m` : '-'}

@@ -5,6 +5,7 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateDistance } from '@/lib/geo';
+import { getIndianDateTime } from '@/lib/indianTime';
 
 export async function POST(request) {
   try {
@@ -71,9 +72,7 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const timeStr = now.toTimeString().split(' ')[0];
+    const { dateStr, timeStr, displayTime } = getIndianDateTime();
 
     const record = db.recordPunchOut({
       studentId: student.id || student.rollNo,

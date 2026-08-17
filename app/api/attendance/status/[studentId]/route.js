@@ -5,6 +5,7 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { isWithinGeofence } from '@/lib/geo';
+import { getIndianDateTime } from '@/lib/indianTime';
 
 export async function GET(request, { params }) {
   try {
@@ -13,8 +14,7 @@ export async function GET(request, { params }) {
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
 
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
+    const { dateStr } = getIndianDateTime();
 
     let student = null;
     let todayRecord = null;

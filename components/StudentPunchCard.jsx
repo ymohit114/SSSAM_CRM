@@ -11,6 +11,7 @@ import { sounds } from '@/lib/sounds';
 import { initNotifications, sendLocalNotification } from '@/lib/notifications';
 import { startGeofenceWatcher, stopGeofenceWatcher } from '@/lib/geoWatcher';
 import { checkStudentFeeDueStatus } from '@/lib/feeReminderService';
+import { formatISTTime } from '@/lib/indianTime';
 
 // Dynamically import GeofenceMap to prevent SSR leaflet errors
 const GeofenceMap = dynamic(() => import('./GeofenceMap'), { ssr: false });
@@ -531,14 +532,14 @@ export default function StudentPunchCard({
                 <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/50">
                   <div className="text-slate-400 text-[11px]">Punch In Time</div>
                   <div className="font-mono font-bold text-white text-sm">
-                    {todayRecord?.punchInTime || '--:--:--'}
+                    {todayRecord?.punchInTime ? formatISTTime(todayRecord.punchInTime) : '--:--:--'}
                   </div>
                 </div>
 
                 <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/50">
                   <div className="text-slate-400 text-[11px]">Punch Out Time</div>
                   <div className="font-mono font-bold text-white text-sm">
-                    {todayRecord?.punchOutTime || '--:--:--'}
+                    {todayRecord?.punchOutTime ? formatISTTime(todayRecord.punchOutTime) : '--:--:--'}
                   </div>
                 </div>
               </div>

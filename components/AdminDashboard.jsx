@@ -6,6 +6,7 @@ import {
   Search, PlusCircle, RefreshCw, Eye, MapPin, ShieldCheck
 } from 'lucide-react';
 import ManualAttendanceModal from './ManualAttendanceModal';
+import { formatISTTime } from '@/lib/indianTime';
 
 export default function AdminDashboard({
   institute,
@@ -196,13 +197,13 @@ export default function AdminDashboard({
                       </td>
 
                       <td className="py-3.5 px-4 font-mono font-medium text-emerald-400">
-                        {attendance.punchInTime || (
+                        {attendance.punchInTime ? formatISTTime(attendance.punchInTime) : (
                           <span className="text-slate-500 font-sans text-xs">Not Punched</span>
                         )}
                       </td>
 
                       <td className="py-3.5 px-4 font-mono font-medium text-amber-400">
-                        {attendance.punchOutTime || (isPresent ? (
+                        {attendance.punchOutTime ? formatISTTime(attendance.punchOutTime) : (isPresent ? (
                           <span className="text-[11px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 font-sans">
                             In Session
                           </span>
