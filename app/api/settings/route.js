@@ -1,9 +1,37 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import InstituteSettings from '@/models/InstituteSettings';
+import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET() {
   try {
-    const settings = db.getInstitute();
+    let settings = null;
+    try {
+      await connectToDatabase();
+      const mongoSettings = await InstituteSettings.findOne({}).lean();
+      if (mongoSettings) {
+        settings = {
+          name: mongoSettings.name || 'SSSAM Academy',
+          tagline: mongoSettings.tagline || 'Excellence in Education & Training',
+          address: mongoSettings.address || 'Ground Floor, M-24, near SBI Bank, Block M, Old DLF Colony, Sector 14, Gurugram, Haryana 122001',
+          latitude: mongoSettings.latitude ?? 28.471764,
+          longitude: mongoSettings.longitude ?? 77.045612,
+          geofenceRadius: mongoSettings.geofenceRadius ?? 25,
+          requirePhoto: Boolean(mongoSettings.requirePhoto),
+          startTime: mongoSettings.startTime || '09:00',
+          lateThresholdMinutes: mongoSettings.lateThresholdMinutes ?? 15,
+          endTime: mongoSettings.endTime || '17:00',
+          adminPin: mongoSettings.adminPin || '1234'
+        };
+      }
+    } catch (e) {
+      console.warn('MongoDB settings fetch note:', e.message);
+    }
+
+    if (!settings) {
+      settings = db.getInstitute();
+    }
+
     return NextResponse.json({ success: true, settings });
   } catch (err) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
@@ -41,6 +69,19 @@ export async function PUT(request) {
     if (adminPin !== undefined) updates.adminPin = adminPin;
 
     const updated = db.updateInstitute(updates);
+
+    // Sync to MongoDB Atlas
+    try {
+      await connectToDatabase();
+      await InstituteSettings.findOneAndUpdate(
+        {},
+        { $set: updates },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    } catch (e) {
+      console.warn('MongoDB settings sync note:', e.message);
+    }
+
     return NextResponse.json({ success: true, message: 'Settings updated successfully', settings: updated });
   } catch (err) {
     return NextResponse.json({ success: false, message: err.message }, { status: 400 });
