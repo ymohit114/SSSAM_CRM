@@ -37,8 +37,7 @@ android/*.iml
 android/captures/
 .gradle/
 build/
-*.apk
 *.aab
 
-# OS files
-Thumbs.db
+# Allow public APK for downloads
+!public/*.apk
