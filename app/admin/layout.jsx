@@ -95,8 +95,8 @@ export default function AdminLayout({ children }) {
           
           {/* Logo & Institute Header */}
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 p-0.5 shadow-xl shadow-indigo-600/30 flex items-center justify-center mx-auto">
-              <img src="/logo.svg" alt="SSSAM Logo" className="w-12 h-12" />
+            <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-xl shadow-indigo-600/30 flex items-center justify-center mx-auto overflow-hidden">
+              <img src="/logo.png" alt="SSSAM Logo" width={56} height={56} className="w-14 h-14 object-contain" />
             </div>
 
             <div>
@@ -203,8 +203,8 @@ export default function AdminLayout({ children }) {
         
         {/* Brand Header */}
         <div className="flex items-center gap-3 pb-5 border-b border-slate-800">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 p-0.5 shadow-lg shadow-indigo-600/20 flex items-center justify-center flex-shrink-0">
-            <img src="/logo.svg" alt="SSSAM Logo" className="w-8 h-8" />
+          <div className="w-10 h-10 rounded-xl bg-white p-0.5 shadow-lg shadow-indigo-600/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/logo.png" alt="SSSAM Logo" width={36} height={36} className="w-9 h-9 object-contain" />
           </div>
           <div>
             <h2 className="text-base font-black text-white leading-tight">SSSAM Academy</h2>
@@ -277,8 +277,8 @@ export default function AdminLayout({ children }) {
       {/* Mobile Top Header */}
       <div className="md:hidden sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-3.5 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-600 p-0.5 flex items-center justify-center">
-            <img src="/logo.svg" alt="SSSAM" className="w-6 h-6" />
+          <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <img src="/logo.png" alt="SSSAM" width={28} height={28} className="w-7 h-7 object-contain" />
           </div>
           <div>
             <span className="font-bold text-white text-xs block leading-tight">SSSAM Academy</span>

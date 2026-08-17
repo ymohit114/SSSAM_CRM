@@ -42,8 +42,8 @@ export default function Navbar({
           {/* Logo & Institute Name */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center">
-                <img src="/logo.svg" alt="SSSAM Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white p-1 shadow-lg shadow-blue-500/20 flex items-center justify-center overflow-hidden">
+                <img src="/logo.png" alt="SSSAM Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
               </div>
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

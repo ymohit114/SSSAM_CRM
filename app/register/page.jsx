@@ -68,8 +68,8 @@ export default function RegisterPage() {
         
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-xl shadow-blue-600/20 flex items-center justify-center mx-auto">
-            <img src="/logo.svg" alt="SSSAM Logo" className="w-12 h-12" />
+          <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-xl shadow-blue-600/20 flex items-center justify-center mx-auto overflow-hidden">
+            <img src="/logo.png" alt="SSSAM Logo" width={48} height={48} className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             SSSAM Academy

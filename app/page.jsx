@@ -192,8 +192,8 @@ export default function StudentPortalPage() {
             
             {/* Brand & User info */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <img src="/logo.svg" alt="SSSAM Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white p-1 shadow-lg shadow-blue-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img src="/logo.png" alt="SSSAM Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
