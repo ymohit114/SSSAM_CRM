@@ -3,12 +3,11 @@
 import React, { useState } from 'react';
 import {
   BookOpen, IndianRupee, Calendar, AlertTriangle,
-  CheckCircle2, ChevronDown, ChevronUp, Layers, Info, ShieldCheck
+  CheckCircle2, ChevronDown, ChevronUp, Layers, Info, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { calculateStudentFee } from '@/lib/feeHelper';
 
 export default function StudentFeeCard({ student }) {
-  const [showDetails, setShowDetails] = useState(false);
   if (!student) return null;
 
   const fee = calculateStudentFee(student);
@@ -17,20 +16,20 @@ export default function StudentFeeCard({ student }) {
   const isInstallment = student.feeType === 'installment' || (fee.totalInstallments && fee.totalInstallments > 1);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm backdrop-blur-md transition-all text-slate-900">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        
-        {/* Course Info */}
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xl space-y-5 text-slate-900">
+      
+      {/* Header: Course Name & Status Badge */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-900 font-bold shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-white font-bold shadow-md">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">Course & Enrollment</div>
-            <div className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>{fee.course || 'Course Enrolled'}</span>
+            <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500">Enrolled Course & Fee Status</div>
+            <div className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+              <span>{fee.course || 'Course Not Assigned'}</span>
               {isInstallment && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
                   Inst. {student.currentInstallment || 1}/{student.totalInstallments || 3}
                 </span>
               )}
@@ -38,59 +37,164 @@ export default function StudentFeeCard({ student }) {
           </div>
         </div>
 
-        {/* Fee Quick Status & Toggle Button */}
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-[11px] text-slate-500 font-medium">Remaining Fee</div>
-            <div className="text-base sm:text-lg font-black font-mono text-slate-900">
-              ₹{fee.totalRemainingPayable.toLocaleString('en-IN')}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowDetails(!showDetails)}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-black border border-slate-300 transition-all text-xs font-semibold flex items-center gap-1 shadow-sm"
-          >
-            <span>{showDetails ? 'Hide' : 'Details'}</span>
-            {showDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+        {/* Status Pill */}
+        <div>
+          {isCleared ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-900 border border-slate-300 shadow-sm">
+              <CheckCircle2 className="w-3.5 h-3.5 text-black" />
+              <span>Fees Cleared</span>
+            </span>
+          ) : isOverdue ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-black text-white border border-black shadow-sm">
+              <AlertTriangle className="w-3.5 h-3.5 text-white animate-pulse" />
+              <span>Payment Overdue</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-slate-600" />
+              <span>Payment Pending</span>
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Expandable Details Section */}
-      {showDetails && (
-        <div className="mt-4 pt-4 border-t border-slate-200 space-y-3 animate-fade-in text-xs text-slate-700">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[11px] block">Fee Status</span>
-              <span className="font-bold inline-flex items-center gap-1 mt-0.5 text-slate-900">
-                {isCleared ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
-                {isCleared ? 'All Cleared' : isOverdue ? `${fee.daysOverdue} Days Overdue` : 'Payment Scheduled'}
-              </span>
+      {/* Main Grid: Remaining Fee & Due Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        
+        {/* Remaining Fee Card */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
+              <span>{isInstallment ? `Current Installment (${student.currentInstallment || 1}/${student.totalInstallments || 3})` : 'Total Remaining Payable'}</span>
+              <IndianRupee className="w-4 h-4 text-slate-700" />
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[11px] block">Next Due Date</span>
-              <span className="font-mono font-bold text-slate-900 mt-0.5 block">
-                {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Due Date'}
-              </span>
-            </div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">
+                ₹{fee.totalRemainingPayable.toLocaleString('en-IN')}
+              </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[11px] block">Late Fine</span>
-              <span className="font-mono font-bold mt-0.5 block text-slate-900">
-                {fee.lateFine > 0 ? `+₹${fee.lateFine} (Applied)` : '₹0'}
-              </span>
+              {fee.lateFine > 0 && (
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-black text-white">
+                  +₹{fee.lateFine} Fine
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Late fee rule notice */}
-          <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-            ℹ️ <strong>Late Fine Policy:</strong> ₹150 fine applies for every 2 days of overdue payment beyond the scheduled due date.
-          </p>
+          <div className="text-[11px] text-slate-600 font-medium mt-2 pt-2 border-t border-slate-200">
+            {isCleared
+              ? '✅ All dues cleared. Thank you!'
+              : `Base Remaining Fee: ₹${fee.baseRemainingFee.toLocaleString('en-IN')}`}
+          </div>
+        </div>
+
+        {/* Due Date Card */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
+              <span>Scheduled Due Date</span>
+              <Calendar className="w-4 h-4 text-slate-700" />
+            </div>
+
+            <div className="text-lg sm:text-xl font-black text-slate-900 font-mono">
+              {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not Scheduled'}
+            </div>
+          </div>
+
+          <div className="text-[11px] font-bold mt-2 pt-2 border-t border-slate-200">
+            {isCleared ? (
+              <span className="text-slate-900 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Account in Good Standing</span>
+              </span>
+            ) : isOverdue ? (
+              <span className="text-slate-900 font-black flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-black" />
+                <span>{fee.daysOverdue} Days Past Due Date</span>
+              </span>
+            ) : (
+              <span className="text-slate-600">Please pay on or before due date</span>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Active Overdue Live Calculation Breakdown (When Overdue) */}
+      {isOverdue && (
+        <div className="p-4 rounded-2xl bg-slate-100 border border-slate-300 space-y-2.5 animate-fade-in shadow-sm">
+          <div className="flex items-center gap-2 text-slate-900 font-black text-xs sm:text-sm">
+            <AlertTriangle className="w-4 h-4 text-black flex-shrink-0" />
+            <span>⚠️ Overdue Fine Calculation Breakdown:</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+              <span className="text-[10px] text-slate-500 block font-semibold">Base Fee</span>
+              <span className="font-mono font-bold text-slate-900 text-sm mt-0.5 block">₹{fee.baseRemainingFee}</span>
+            </div>
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+              <span className="text-[10px] text-slate-500 block font-semibold">Days Overdue</span>
+              <span className="font-mono font-bold text-slate-900 text-sm mt-0.5 block">{fee.daysOverdue} Days</span>
+            </div>
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+              <span className="text-[10px] text-slate-500 block font-semibold">Fine Applied</span>
+              <span className="font-mono font-bold text-black text-sm mt-0.5 block">+₹{fee.lateFine}</span>
+            </div>
+            <div className="bg-black text-white p-2.5 rounded-xl border border-black">
+              <span className="text-[10px] text-slate-300 block font-semibold">Total Payable</span>
+              <span className="font-mono font-bold text-white text-sm mt-0.5 block">₹{fee.totalRemainingPayable}</span>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* DETAILED LATE FINE POLICY & SLAB TABLE (ALWAYS VISIBLE) */}
+      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+        
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white flex-shrink-0">
+            <Info className="w-3.5 h-3.5" />
+          </div>
+          <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+            📌 Important Late Fee Policy & Rule (Fine Kaise Lagega)
+          </h4>
+        </div>
+
+        <p className="text-xs text-slate-700 leading-relaxed">
+          Sabhi students ko apni remaining fee ya monthly installment <strong>Due Date</strong> se pehle jama karni hoti hai. Agar payment due date ke baad late hoti hai, to <strong>har 2 din delay hone par ₹150 ka Late Fine</strong> automatically add hota jayega:
+        </p>
+
+        {/* Slab Example Table */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs pt-1">
+          <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+            <span className="text-[11px] text-slate-500 font-semibold block">1 - 2 Days Late</span>
+            <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹150 Fine</span>
+          </div>
+
+          <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+            <span className="text-[11px] text-slate-500 font-semibold block">3 - 4 Days Late</span>
+            <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹300 Fine</span>
+          </div>
+
+          <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+            <span className="text-[11px] text-slate-500 font-semibold block">5 - 6 Days Late</span>
+            <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹450 Fine</span>
+          </div>
+
+          <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+            <span className="text-[11px] text-slate-500 font-semibold block">7 - 8 Days Late</span>
+            <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹600 Fine</span>
+          </div>
+        </div>
+
+        <div className="text-[11px] text-slate-500 font-medium pt-1">
+          💡 <em>Note: Fine se bachne ke liye scheduled date par hi payment complete karein ya institute admin office se sampark karein.</em>
+        </div>
+
+      </div>
+
     </div>
   );
 }
