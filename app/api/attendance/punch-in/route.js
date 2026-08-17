@@ -11,7 +11,7 @@ import { getIndianDateTime } from '@/lib/indianTime';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentId, lat, lng, selfieImg, overrideDistance } = body;
+    const { studentId, lat, lng, selfieImg, overrideDistance, time, date } = body;
 
     if (!studentId) {
       return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
@@ -76,7 +76,9 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    const { dateStr, timeStr, displayTime } = getIndianDateTime();
+    const ist = getIndianDateTime();
+    const dateStr = (date && date.length === 10) ? date : ist.dateStr;
+    const timeStr = (time && time.length >= 5) ? time : ist.timeStr;
 
     // Status is always Present (students have flexible personal batch timings)
     const status = "Present";

@@ -180,10 +180,16 @@ export default function StudentPunchCard({
     setStatusMessage(null);
 
     try {
+      const clientNow = new Date();
+      const clientTime = clientNow.toLocaleTimeString('en-GB', { hour12: false });
+      const clientDate = clientNow.toLocaleDateString('en-CA');
+
       const res = await onPunchIn({
         studentId: selectedStudentId,
         lat: gpsPosition.latitude,
         lng: gpsPosition.longitude,
+        time: clientTime,
+        date: clientDate,
         overrideDistance: false
       });
 
@@ -262,11 +268,17 @@ export default function StudentPunchCard({
     setStudyError('');
 
     try {
+      const clientNow = new Date();
+      const clientTime = clientNow.toLocaleTimeString('en-GB', { hour12: false });
+      const clientDate = clientNow.toLocaleDateString('en-CA');
+
       const res = await onPunchOut({
         studentId: selectedStudentId,
         lat: gpsPosition.latitude,
         lng: gpsPosition.longitude,
         studySummary: studySummary.trim(),
+        time: clientTime,
+        date: clientDate,
         overrideDistance: false
       });
 
