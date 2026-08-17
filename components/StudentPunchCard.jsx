@@ -29,8 +29,6 @@ export default function StudentPunchCard({
   onPunchOut
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
   const [punching, setPunching] = useState(false);
   const [todayRecord, setTodayRecord] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
@@ -47,10 +45,11 @@ export default function StudentPunchCard({
   const [studySummary, setStudySummary] = useState('');
   const [studyError, setStudyError] = useState('');
 
-  // Auto-select first student if available
+  // Auto-select logged in student
   useEffect(() => {
-    if (students.length > 0 && !selectedStudentId) {
-      setSelectedStudentId(students[0].id);
+    if (students && students.length > 0 && !selectedStudentId) {
+      const first = students[0];
+      setSelectedStudentId(first.id || first._id || first.rollNo);
     }
   }, [students, selectedStudentId]);
 
@@ -105,7 +104,7 @@ export default function StudentPunchCard({
     };
   }, [todayRecord]);
 
-  const selectedStudent = students.find(s => s.id === selectedStudentId);
+  const selectedStudent = students.find(s => s.id === selectedStudentId || s._id === selectedStudentId) || students[0] || null;
 
   // Check fee status whenever student changes
   useEffect(() => {
@@ -139,12 +138,6 @@ export default function StudentPunchCard({
       stopGeofenceWatcher();
     };
   }, [todayRecord, selectedStudentId, selectedStudent, institute]);
-
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.batchName && s.batchName.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   const triggerConfetti = () => {
     confetti({
@@ -353,87 +346,35 @@ export default function StudentPunchCard({
           </div>
         )}
 
-        {/* Top: Student Selector */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-            <span>Select Student / Roll Number</span>
-            <span className="text-[11px] text-blue-400 normal-case font-medium">{students.length} Enrolled Students</span>
-          </label>
-
-          <div className="relative">
-            <div className="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-2xl p-2.5 shadow-inner focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md mr-3 flex-shrink-0">
-                {selectedStudent ? selectedStudent.name.charAt(0) : 'S'}
+        {/* Logged-in Student Account Banner */}
+        {selectedStudent && (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between flex-wrap gap-3 shadow-inner">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-black text-white text-base shadow-md flex-shrink-0">
+                {selectedStudent.name ? selectedStudent.name.charAt(0).toUpperCase() : 'S'}
               </div>
-
-              <input
-                type="text"
-                value={searchQuery}
-                onFocus={() => setShowDropdown(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowDropdown(true);
-                }}
-                placeholder="Search by Roll No or Student Name..."
-                className="w-full bg-transparent text-sm sm:text-base font-semibold text-white placeholder-slate-500 focus:outline-none"
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 rounded-lg border border-slate-700"
-              >
-                {showDropdown ? 'Close' : 'Browse'}
-              </button>
+              <div>
+                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <span>{selectedStudent.name}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Enrolled Student
+                  </span>
+                </div>
+                <div className="text-xs font-mono text-slate-400 flex items-center gap-2 mt-0.5">
+                  <span className="text-blue-400 font-semibold">{selectedStudent.rollNo}</span>
+                  {selectedStudent.course && <span>• {selectedStudent.course}</span>}
+                </div>
+              </div>
             </div>
 
-            {showDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((s) => (
-                    <div
-                      key={s.id}
-                      onClick={() => {
-                        setSelectedStudentId(s.id);
-                        setSearchQuery(`${s.rollNo} - ${s.name}`);
-                        setShowDropdown(false);
-                      }}
-                      className="p-3 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400">
-                          {s.rollNo.split('-')[1] || s.rollNo}
-                        </span>
-                        <div>
-                          <div className="text-sm font-bold text-white">{s.name}</div>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                        {s.rollNo}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-xs text-slate-500">No student found matching query</div>
-                )}
+            {selectedStudent.phone && (
+              <div className="text-xs font-mono text-slate-300 bg-slate-800/90 px-3.5 py-2 rounded-xl border border-slate-700/70 flex items-center gap-2 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Phone: <strong className="text-white">{selectedStudent.phone}</strong></span>
               </div>
             )}
           </div>
-
-          {selectedStudent && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/90 border border-slate-700/60 text-xs font-medium text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                Roll: <strong className="text-white font-mono">{selectedStudent.rollNo}</strong>
-              </span>
-              {selectedStudent.phone && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/90 border border-slate-700/60 text-xs font-medium text-slate-300">
-                  Phone: <strong className="text-white">{selectedStudent.phone}</strong>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Center: Geofence Radar Distance Gauge */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
