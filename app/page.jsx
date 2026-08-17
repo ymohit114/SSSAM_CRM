@@ -184,39 +184,39 @@ export default function StudentPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col selection:bg-white selection:text-black">
       
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-md">
+      <header className="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             
             {/* Brand & User info */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white p-1 shadow-lg shadow-blue-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <img src="/logo.png" alt="SSSAM Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-900 border border-zinc-700 p-1 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img src="/logo.png" alt="SSSAM Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10 object-contain brightness-95" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-base sm:text-xl font-black tracking-tight text-white">
+                  <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
                     {institute.name}
                   </h1>
-                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-700">
                     {maxRadius}M GEOFENCE
                   </span>
                 </div>
-                <div className="text-xs text-slate-300 font-semibold flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span>{currentUser.name}</span>
-                  <span className="font-mono text-slate-500">({currentUser.rollNo})</span>
+                <div className="text-xs text-zinc-400 font-semibold flex items-center gap-1.5 mt-0.5">
+                  <span className="w-2 h-2 rounded-full bg-white"></span>
+                  <span className="text-zinc-200">{currentUser.name}</span>
+                  <span className="font-mono text-zinc-500">({currentUser.rollNo})</span>
                 </div>
               </div>
             </div>
 
             {/* Center Live Clock (Desktop) */}
             <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700/50 shadow-inner">
-                <Clock className="w-4 h-4 text-blue-400" />
+              <div className="flex items-center gap-2 bg-zinc-900 px-3.5 py-1.5 rounded-xl border border-zinc-800 shadow-inner">
+                <Clock className="w-4 h-4 text-zinc-400" />
                 <div className="text-xs font-mono font-bold text-white tracking-wider">{formattedTime}</div>
               </div>
             </div>
@@ -228,9 +228,9 @@ export default function StudentPortalPage() {
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(true)}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-bold border border-zinc-700 transition-all"
               >
-                <History className="w-4 h-4 text-blue-400" />
+                <History className="w-4 h-4 text-zinc-400" />
                 <span className="hidden sm:inline">My Attendance</span>
               </button>
 
@@ -238,9 +238,9 @@ export default function StudentPortalPage() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-rose-950/50 hover:bg-rose-950 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white text-xs font-bold transition-all"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 text-zinc-400" />
                 <span className="hidden sm:inline">Logout</span>
               </button>
 
@@ -281,10 +281,10 @@ export default function StudentPortalPage() {
       )}
 
       {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+      <footer className="bg-black border-t border-zinc-900 py-6 text-center text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            Logged in as <strong className="text-slate-300">{currentUser.name}</strong> ({currentUser.rollNo})
+            Logged in as <strong className="text-zinc-300">{currentUser.name}</strong> ({currentUser.rollNo})
           </div>
           <div>
             &copy; {new Date().getFullYear()} {institute.name}. All rights reserved.

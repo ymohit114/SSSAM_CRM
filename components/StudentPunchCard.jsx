@@ -141,7 +141,7 @@ export default function StudentPunchCard({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6']
+      colors: ['#ffffff', '#a1a1aa', '#71717a', '#27272a']
     });
   };
 
@@ -195,7 +195,6 @@ export default function StudentPunchCard({
           text: `🎉 Attendance Marked at ${formatISTTime(res.record.punchInTime)}!`
         });
 
-        // Dispatch Native Notification
         sendLocalNotification({
           id: 1001,
           title: "✅ SSSAM Punch In Recorded",
@@ -297,28 +296,24 @@ export default function StudentPunchCard({
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       
-      {/* 7-Day Fee Alert (Only if active) */}
+      {/* Fee Alert (Monochrome) */}
       {activeFeeReminder && activeFeeReminder.hasReminder && (
-        <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs shadow-md animate-fade-in ${
-          activeFeeReminder.isOverdue
-            ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
-            : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
-        }`}>
+        <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-between gap-3 text-xs shadow-md animate-fade-in text-zinc-200">
           <div className="flex items-center gap-2.5">
-            <BellRing className="w-4 h-4 flex-shrink-0 animate-bounce" />
+            <BellRing className="w-4 h-4 text-white flex-shrink-0" />
             <span>{activeFeeReminder.punchInMessage}</span>
           </div>
-          <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-black/30 text-white flex-shrink-0">
+          <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-white flex-shrink-0">
             Due: {activeFeeReminder.dueDate}
           </span>
         </div>
       )}
 
-      {/* Main Clean Punch Card */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-xl space-y-6">
+      {/* Main Clean Monochrome Card */}
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6">
         
         {/* Top Status & GPS Bar */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800/80">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-zinc-800/80">
           
           {/* GPS Campus Eligibility Badge */}
           <div className="flex items-center gap-2">
@@ -327,16 +322,10 @@ export default function StudentPunchCard({
               onClick={refreshGPS}
               disabled={gpsLoading}
               title="Refresh GPS Location"
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                distance == null
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                  : isInside
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-sm shadow-emerald-500/10'
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-              }`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 text-zinc-200 border border-zinc-700 hover:bg-zinc-800 transition-all shadow-sm"
             >
               <span className={`w-2 h-2 rounded-full ${
-                distance == null ? 'bg-amber-400 animate-ping' : isInside ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                distance == null ? 'bg-zinc-400 animate-ping' : isInside ? 'bg-white' : 'bg-zinc-500'
               }`}></span>
               <span>
                 {distance == null
@@ -345,18 +334,18 @@ export default function StudentPunchCard({
                   ? `Inside Campus (${Math.round(distance)}m)`
                   : `Outside Campus (${Math.round(distance)}m / Max ${maxRadius}m)`}
               </span>
-              <RefreshCw className={`w-3 h-3 text-slate-400 hover:text-white ${gpsLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-zinc-400 hover:text-white ${gpsLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
           {/* Today's Status Badge */}
           <div>
             {todayRecord ? (
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-900 text-white border border-zinc-700">
                 {todayRecord.status || 'Present'}
               </span>
             ) : (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 text-zinc-500 border border-zinc-800">
                 Not Punched Today
               </span>
             )}
@@ -365,13 +354,9 @@ export default function StudentPunchCard({
 
         {/* Status Messages */}
         {statusMessage && (
-          <div className={`p-3.5 rounded-2xl border text-xs font-medium animate-fade-in flex items-center justify-between ${
-            statusMessage.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
-              : 'bg-rose-950/60 border-rose-500/40 text-rose-200'
-          }`}>
+          <div className="p-3.5 rounded-2xl border text-xs font-medium animate-fade-in flex items-center justify-between bg-zinc-900 border-zinc-700 text-white">
             <span>{statusMessage.text}</span>
-            <button onClick={() => setStatusMessage(null)} className="text-slate-400 hover:text-white ml-2 text-xs">✕</button>
+            <button onClick={() => setStatusMessage(null)} className="text-zinc-400 hover:text-white ml-2 text-xs">✕</button>
           </div>
         )}
 
@@ -380,21 +365,21 @@ export default function StudentPunchCard({
           
           {/* Active Session Display (When punched in) */}
           {isPunchedIn && (
-            <div className="bg-blue-950/30 border border-blue-500/20 rounded-2xl p-4 max-w-sm mx-auto space-y-1">
-              <div className="text-xs text-blue-300 font-medium flex items-center justify-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 max-w-sm mx-auto space-y-1">
+              <div className="text-xs text-zinc-400 font-medium flex items-center justify-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-zinc-300 animate-spin" />
                 <span>Active Study Session</span>
               </div>
               <div className="text-3xl sm:text-4xl font-mono font-black text-white tracking-widest">
                 {elapsedTime}
               </div>
-              <div className="text-[11px] text-slate-400 font-mono">
+              <div className="text-[11px] text-zinc-400 font-mono">
                 Started at {formatISTTime(todayRecord.punchInTime)}
               </div>
             </div>
           )}
 
-          {/* Large Tactile Punch Button */}
+          {/* Large High-Contrast Tactile Punch Button */}
           <div className="max-w-md mx-auto">
             {!isPunchedIn && !isPunchedOut && (
               <button
@@ -402,10 +387,10 @@ export default function StudentPunchCard({
                 type="button"
                 disabled={punching || !isInside}
                 onClick={handlePunchIn}
-                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
+                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-2xl ${
                   !isInside
-                    ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white hover:shadow-blue-500/30 hover:scale-[1.02] border border-blue-400/30'
+                    ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed'
+                    : 'bg-white text-black hover:bg-zinc-200 border border-white hover:scale-[1.02]'
                 }`}
               >
                 <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -425,10 +410,10 @@ export default function StudentPunchCard({
                 type="button"
                 disabled={punching || !isInside}
                 onClick={handleInitiatePunchOut}
-                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
+                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-2xl ${
                   !isInside
-                    ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:shadow-amber-500/30 hover:scale-[1.02] border border-amber-400/30'
+                    ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed'
+                    : 'bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-600 hover:scale-[1.02]'
                 }`}
               >
                 <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -443,37 +428,37 @@ export default function StudentPunchCard({
             )}
 
             {isPunchedOut && (
-              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-1">
-                <div className="text-emerald-400 font-bold text-sm sm:text-base flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" />
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center space-y-1">
+                <div className="text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
                   <span>Today's Attendance Completed!</span>
                 </div>
-                <p className="text-xs text-slate-400">
-                  Great job! You have successfully punched in & out for today.
+                <p className="text-xs text-zinc-400">
+                  You have successfully punched in & out for today.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Minimal Today Summary Stats */}
+        {/* Minimal Monochrome Summary Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2 text-center text-xs">
-          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[11px] text-slate-400 block">Punch In</span>
-            <span className="font-mono font-bold text-emerald-400 text-sm mt-0.5 block">
+          <div className="bg-zinc-900/70 p-3 rounded-2xl border border-zinc-800">
+            <span className="text-[11px] text-zinc-400 block">Punch In</span>
+            <span className="font-mono font-bold text-white text-sm mt-0.5 block">
               {todayRecord?.punchInTime ? formatISTTime(todayRecord.punchInTime) : '--:--'}
             </span>
           </div>
 
-          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[11px] text-slate-400 block">Punch Out</span>
-            <span className="font-mono font-bold text-amber-400 text-sm mt-0.5 block">
+          <div className="bg-zinc-900/70 p-3 rounded-2xl border border-zinc-800">
+            <span className="text-[11px] text-zinc-400 block">Punch Out</span>
+            <span className="font-mono font-bold text-white text-sm mt-0.5 block">
               {todayRecord?.punchOutTime ? formatISTTime(todayRecord.punchOutTime) : '--:--'}
             </span>
           </div>
 
-          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[11px] text-slate-400 block">Duration</span>
+          <div className="bg-zinc-900/70 p-3 rounded-2xl border border-zinc-800">
+            <span className="text-[11px] text-zinc-400 block">Duration</span>
             <span className="font-mono font-bold text-white text-sm mt-0.5 block">
               {todayRecord?.durationMinutes ? `${Math.floor(todayRecord.durationMinutes / 60)}h ${todayRecord.durationMinutes % 60}m` : (isPunchedIn ? elapsedTime : '--')}
             </span>
@@ -481,21 +466,21 @@ export default function StudentPunchCard({
         </div>
 
         {/* Campus Map Toggle */}
-        <div className="pt-2 border-t border-slate-800/80">
+        <div className="pt-2 border-t border-zinc-800/80">
           <button
             type="button"
             onClick={() => setShowMap(!showMap)}
-            className="w-full py-2.5 px-4 rounded-xl bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center justify-between transition-all"
+            className="w-full py-2.5 px-4 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 text-xs font-semibold text-zinc-400 hover:text-zinc-200 border border-zinc-800 flex items-center justify-between transition-all"
           >
             <span className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-400" />
+              <MapPin className="w-4 h-4 text-zinc-400" />
               <span>Campus Geofence Map ({maxRadius}m Zone)</span>
             </span>
             {showMap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {showMap && (
-            <div className="mt-3 rounded-2xl overflow-hidden border border-slate-800 animate-fade-in">
+            <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-800 animate-fade-in">
               <GeofenceMap
                 instituteLat={institute?.latitude}
                 instituteLng={institute?.longitude}
@@ -515,25 +500,25 @@ export default function StudentPunchCard({
 
       {/* Study Summary Modal (For Punch Out) */}
       {showStudyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white">
                   <LogOut className="w-4 h-4" />
                 </div>
                 <h3 className="text-base font-bold text-white">Daily Study Summary</h3>
               </div>
               <button
                 onClick={() => setShowStudyModal(false)}
-                className="text-slate-400 hover:text-white text-sm p-1"
+                className="text-zinc-400 hover:text-white text-sm p-1"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-zinc-300">
               Please enter what topics / practicals you completed today before punch out (min 20 characters):
             </p>
 
@@ -544,17 +529,17 @@ export default function StudentPunchCard({
                 placeholder="e.g. Practiced MS Excel VLOOKUP formulas and completed assignment #4..."
                 rows={4}
                 required
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white"
               />
 
               <div className="flex items-center justify-between text-[11px]">
-                <span className={studySummary.trim().length >= 20 ? 'text-emerald-400' : 'text-slate-500'}>
+                <span className={studySummary.trim().length >= 20 ? 'text-white font-bold' : 'text-zinc-500'}>
                   {studySummary.trim().length}/20 characters min
                 </span>
               </div>
 
               {studyError && (
-                <div className="text-xs text-rose-400 bg-rose-950/40 p-2.5 rounded-xl border border-rose-500/30">
+                <div className="text-xs text-zinc-200 bg-zinc-900 p-2.5 rounded-xl border border-zinc-700">
                   {studyError}
                 </div>
               )}
@@ -563,14 +548,14 @@ export default function StudentPunchCard({
                 <button
                   type="button"
                   onClick={() => setShowStudyModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={punching || studySummary.trim().length < 20}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-xs font-bold text-white shadow-lg"
+                  className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-black disabled:opacity-50 text-xs shadow-lg"
                 >
                   {punching ? 'Recording...' : 'Confirm Punch Out'}
                 </button>
