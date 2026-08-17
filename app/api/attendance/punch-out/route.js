@@ -77,6 +77,7 @@ export async function POST(request) {
 
     const record = db.recordPunchOut({
       studentId: student.id || student.rollNo,
+      student,
       date: dateStr,
       time: timeStr,
       lat: userLat || institute.latitude,
