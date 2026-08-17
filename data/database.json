@@ -1,0 +1,143 @@
+{
+  "institute": {
+    "name": "SSSAM Academy",
+    "tagline": "Excellence in Education & Training",
+    "address": "Main Campus, Knowledge Park, India",
+    "latitude": 28.470452,
+    "longitude": 77.044462,
+    "geofenceRadius": 50,
+    "requirePhoto": false,
+    "startTime": "09:00",
+    "lateThresholdMinutes": 15,
+    "endTime": "17:00",
+    "adminPin": "1234"
+  },
+  "admin": {
+    "email": "admin@mohit.com",
+    "password": "1234567890",
+    "name": "Mohit Yadav (Admin)",
+    "role": "admin"
+  },
+  "students": [
+    {
+      "id": "std-1786958990076",
+      "rollNo": "SSSAM-101",
+      "name": "Mohit yadav",
+      "phone": "7082544954",
+      "email": "tuitionforhomes@gmail.com",
+      "password": "Mohit@123",
+      "status": "approved",
+      "isApproved": true,
+      "course": "data",
+      "feeType": "installment",
+      "remainingFee": 5000,
+      "dueDate": "2026-08-13",
+      "installments": [
+        {
+          "installmentNo": 1,
+          "amount": 5000,
+          "dueDate": "2026-08-24"
+        },
+        {
+          "installmentNo": 2,
+          "amount": 5000,
+          "dueDate": "2026-09-23"
+        },
+        {
+          "installmentNo": 3,
+          "amount": 5000,
+          "dueDate": "2026-10-23"
+        }
+      ],
+      "currentInstallment": 1,
+      "totalInstallments": 3,
+      "waivedFine": 0,
+      "gender": "Male",
+      "active": true,
+      "joinDate": "2026-08-17"
+    },
+    {
+      "id": "std-1786968274729",
+      "rollNo": "SSSAM-102",
+      "name": "Saloni",
+      "phone": "8130979070",
+      "email": "hdsh@gmail.com",
+      "password": "saloni223",
+      "status": "approved",
+      "isApproved": true,
+      "course": "Data Science",
+      "feeType": "installment",
+      "remainingFee": 5000,
+      "dueDate": "2026-08-05",
+      "installments": [
+        {
+          "installmentNo": 1,
+          "amount": 5000,
+          "dueDate": "2026-08-05"
+        },
+        {
+          "installmentNo": 2,
+          "amount": 5000,
+          "dueDate": "2026-09-23"
+        },
+        {
+          "installmentNo": 3,
+          "amount": 5000,
+          "dueDate": "2026-10-23"
+        }
+      ],
+      "currentInstallment": 1,
+      "totalInstallments": 3,
+      "waivedFine": 0,
+      "gender": "Male",
+      "active": true,
+      "joinDate": "2026-08-17"
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-1786959418041",
+      "date": "2026-08-17",
+      "studentId": "std-1786958990076",
+      "rollNo": "SSSAM-101",
+      "studentName": "Mohit yadav",
+      "punchInTime": "15:06:58",
+      "punchInLat": 28.470442462161838,
+      "punchInLng": 77.04442615530338,
+      "punchInDistance": 3.7,
+      "punchInSelfie": null,
+      "punchOutTime": "15:07:32",
+      "punchOutLat": 28.470456096825625,
+      "punchOutLng": 77.04447370340392,
+      "punchOutDistance": 1.2,
+      "punchOutSelfie": null,
+      "durationMinutes": 0,
+      "status": "Present",
+      "remarks": "Punched in 4m from academy",
+      "timestamp": "2026-08-17T09:36:58.041Z",
+      "studySummary": "Completed theory lecture notes and solved practice questions"
+    },
+    {
+      "id": "att-1786968535675",
+      "date": "2026-08-17",
+      "studentId": "std-1786968274729",
+      "rollNo": "SSSAM-102",
+      "studentName": "Saloni",
+      "punchInTime": "17:38:55",
+      "punchInLat": 28.4703226,
+      "punchInLng": 77.0444046,
+      "punchInDistance": 15.4,
+      "punchInSelfie": null,
+      "punchOutTime": "17:43:01",
+      "punchOutLat": 28.4703758,
+      "punchOutLng": 77.0443829,
+      "punchOutDistance": 11.5,
+      "punchOutSelfie": null,
+      "durationMinutes": 4,
+      "status": "Present",
+      "remarks": "Punched in 15m from academy",
+      "timestamp": "2026-08-17T12:08:55.675Z",
+      "studySummary": "Shsbsnsbsbnsnssnsnsnns"
+    }
+  ]
+}

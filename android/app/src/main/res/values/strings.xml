@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SSSAM Portal</string>
+    <string name="title_activity_main">SSSAM Portal</string>
+    <string name="package_name">com.sssam.academy</string>
+    <string name="custom_url_scheme">com.sssam.academy</string>
+</resources>
