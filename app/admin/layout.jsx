@@ -80,7 +80,7 @@ export default function AdminLayout({ children }) {
     { label: 'Overview & Live Feed', href: '/admin', icon: LayoutDashboard },
     { label: 'Student Directory', href: '/admin/students', icon: Users },
     { label: 'Reports & Export', href: '/admin/reports', icon: FileSpreadsheet },
-    { label: 'GPS & Geofence', href: '/admin/settings', icon: Settings },
+    { label: 'Settings & App Updates', href: '/admin/settings', icon: Settings },
   ];
 
   // If not authenticated, show Admin Login Card
