@@ -17,20 +17,20 @@ export default function StudentFeeCard({ student }) {
   const isInstallment = student.feeType === 'installment' || (fee.totalInstallments && fee.totalInstallments > 1);
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 shadow-xl backdrop-blur-md transition-all">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm backdrop-blur-md transition-all text-slate-900">
       <div className="flex items-center justify-between flex-wrap gap-3">
         
         {/* Course Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white font-bold shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-900 font-bold shadow-sm">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider font-semibold text-zinc-400">Course & Enrollment</div>
-            <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+            <div className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">Course & Enrollment</div>
+            <div className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
               <span>{fee.course || 'Course Enrolled'}</span>
               {isInstallment && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300">
                   Inst. {student.currentInstallment || 1}/{student.totalInstallments || 3}
                 </span>
               )}
@@ -41,10 +41,8 @@ export default function StudentFeeCard({ student }) {
         {/* Fee Quick Status & Toggle Button */}
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-[11px] text-zinc-400 font-medium">Remaining Fee</div>
-            <div className={`text-base sm:text-lg font-black font-mono ${
-              isCleared ? 'text-white' : isOverdue ? 'text-zinc-300' : 'text-white'
-            }`}>
+            <div className="text-[11px] text-slate-500 font-medium">Remaining Fee</div>
+            <div className="text-base sm:text-lg font-black font-mono text-slate-900">
               ₹{fee.totalRemainingPayable.toLocaleString('en-IN')}
             </div>
           </div>
@@ -52,7 +50,7 @@ export default function StudentFeeCard({ student }) {
           <button
             type="button"
             onClick={() => setShowDetails(!showDetails)}
-            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 transition-all text-xs font-semibold flex items-center gap-1"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-black border border-slate-300 transition-all text-xs font-semibold flex items-center gap-1 shadow-sm"
           >
             <span>{showDetails ? 'Hide' : 'Details'}</span>
             {showDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -62,33 +60,33 @@ export default function StudentFeeCard({ student }) {
 
       {/* Expandable Details Section */}
       {showDetails && (
-        <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3 animate-fade-in text-xs text-zinc-300">
+        <div className="mt-4 pt-4 border-t border-slate-200 space-y-3 animate-fade-in text-xs text-slate-700">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-              <span className="text-zinc-400 text-[11px] block">Fee Status</span>
-              <span className="font-bold inline-flex items-center gap-1 mt-0.5 text-white">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[11px] block">Fee Status</span>
+              <span className="font-bold inline-flex items-center gap-1 mt-0.5 text-slate-900">
                 {isCleared ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
                 {isCleared ? 'All Cleared' : isOverdue ? `${fee.daysOverdue} Days Overdue` : 'Payment Scheduled'}
               </span>
             </div>
 
-            <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-              <span className="text-zinc-400 text-[11px] block">Next Due Date</span>
-              <span className="font-mono font-bold text-white mt-0.5 block">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[11px] block">Next Due Date</span>
+              <span className="font-mono font-bold text-slate-900 mt-0.5 block">
                 {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Due Date'}
               </span>
             </div>
 
-            <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-              <span className="text-zinc-400 text-[11px] block">Late Fine</span>
-              <span className="font-mono font-bold mt-0.5 block text-white">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[11px] block">Late Fine</span>
+              <span className="font-mono font-bold mt-0.5 block text-slate-900">
                 {fee.lateFine > 0 ? `+₹${fee.lateFine} (Applied)` : '₹0'}
               </span>
             </div>
           </div>
 
           {/* Late fee rule notice */}
-          <p className="text-[11px] text-zinc-400 bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800">
+          <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
             ℹ️ <strong>Late Fine Policy:</strong> ₹150 fine applies for every 2 days of overdue payment beyond the scheduled due date.
           </p>
         </div>

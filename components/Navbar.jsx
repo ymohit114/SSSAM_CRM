@@ -35,28 +35,28 @@ export default function Navbar({
   });
 
   return (
-    <header className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 shadow-md">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm text-slate-900">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
           {/* Logo & Institute Name */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-900 border border-zinc-700 p-1 shadow-md flex items-center justify-center overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white border border-slate-200 p-1 shadow-sm flex items-center justify-center overflow-hidden">
                 <img src="/logo.png" alt="SSSAM Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
               </div>
             </div>
             
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
                   {instituteName}
                 </h1>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-700">
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
                   GEOFENCE 25M
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-zinc-400 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                 Student Attendance Portal & CRM
               </p>
             </div>
@@ -65,17 +65,17 @@ export default function Navbar({
           {/* Center: Live Clock & GPS Status (Desktop) */}
           <div className="hidden md:flex items-center gap-4">
             {/* Clock */}
-            <div className="flex items-center gap-2 bg-zinc-900 px-3.5 py-1.5 rounded-xl border border-zinc-800 shadow-inner">
-              <Clock className="w-4 h-4 text-zinc-400" />
+            <div className="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-inner">
+              <Clock className="w-4 h-4 text-slate-600" />
               <div className="text-right">
-                <div className="text-xs font-mono font-bold text-white tracking-wider">{formattedTime}</div>
-                <div className="text-[10px] text-zinc-400 font-medium">{formattedDate}</div>
+                <div className="text-xs font-mono font-bold text-slate-900 tracking-wider">{formattedTime}</div>
+                <div className="text-[10px] text-slate-500 font-medium">{formattedDate}</div>
               </div>
             </div>
 
             {/* GPS Pill */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-medium text-white">
-              <span className={`w-2 h-2 rounded-full ${gpsActive ? (isInside ? 'bg-white' : 'bg-zinc-500') : 'bg-zinc-600'}`}></span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-100 text-xs font-medium text-slate-900">
+              <span className={`w-2 h-2 rounded-full ${gpsActive ? (isInside ? 'bg-black' : 'bg-slate-400') : 'bg-slate-400'}`}></span>
               <span>
                 {gpsActive
                   ? isInside
@@ -84,7 +84,7 @@ export default function Navbar({
                   : 'Locating GPS...'}
               </span>
               {gpsAccuracy && (
-                <span className="text-[10px] text-zinc-400 font-mono">±{gpsAccuracy}m</span>
+                <span className="text-[10px] text-slate-500 font-mono">±{gpsAccuracy}m</span>
               )}
             </div>
           </div>
@@ -96,8 +96,8 @@ export default function Navbar({
               onClick={() => setActiveTab('punch')}
               className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                 activeTab === 'punch'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-slate-600 hover:text-black hover:bg-slate-100'
               }`}
             >
               <Radio className="w-4 h-4" />
@@ -115,8 +115,8 @@ export default function Navbar({
               }}
               className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                 activeTab !== 'punch'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-slate-600 hover:text-black hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <Shield className="w-4 h-4" />
