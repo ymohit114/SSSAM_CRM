@@ -158,39 +158,39 @@ export default function StudentFeeCard({ student }) {
             <Info className="w-3.5 h-3.5" />
           </div>
           <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
-            📌 Important Late Fee Policy & Rule (Fine Kaise Lagega)
+            📌 Important Late Fee Policy & Rules
           </h4>
         </div>
 
         <p className="text-xs text-slate-700 leading-relaxed">
-          Sabhi students ko apni remaining fee ya monthly installment <strong>Due Date</strong> se pehle jama karni hoti hai. Agar payment due date ke baad late hoti hai, to <strong>har 2 din delay hone par ₹150 ka Late Fine</strong> automatically add hota jayega:
+          All students are required to pay their remaining course fee or monthly installment on or before the scheduled <strong>Due Date</strong>. If payment is delayed past the due date, a <strong>Late Fine of ₹150 is automatically added for every 2 overdue days</strong>:
         </p>
 
         {/* Slab Example Table */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs pt-1">
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[11px] text-slate-500 font-semibold block">1 - 2 Days Late</span>
+            <span className="text-[11px] text-slate-500 font-semibold block">1 - 2 Days Overdue</span>
             <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹150 Fine</span>
           </div>
 
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[11px] text-slate-500 font-semibold block">3 - 4 Days Late</span>
+            <span className="text-[11px] text-slate-500 font-semibold block">3 - 4 Days Overdue</span>
             <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹300 Fine</span>
           </div>
 
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[11px] text-slate-500 font-semibold block">5 - 6 Days Late</span>
+            <span className="text-[11px] text-slate-500 font-semibold block">5 - 6 Days Overdue</span>
             <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹450 Fine</span>
           </div>
 
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[11px] text-slate-500 font-semibold block">7 - 8 Days Late</span>
+            <span className="text-[11px] text-slate-500 font-semibold block">7 - 8 Days Overdue</span>
             <span className="font-mono font-black text-slate-900 mt-0.5 block">+₹600 Fine</span>
           </div>
         </div>
 
         <div className="text-[11px] text-slate-500 font-medium pt-1">
-          💡 <em>Note: Fine se bachne ke liye scheduled date par hi payment complete karein ya institute admin office se sampark karein.</em>
+          💡 <em>Note: To avoid accumulating late fines, please complete your payment on or before the due date or visit the institute office.</em>
         </div>
 
       </div>
