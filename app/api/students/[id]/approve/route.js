@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import Student from '@/models/Student';
@@ -11,6 +12,9 @@ export async function POST(request, { params }) {
     const {
       rollNo,
       course,
+      phone,
+      email,
+      name,
       feeType = 'single',
       remainingFee,
       dueDate,
@@ -31,28 +35,44 @@ export async function POST(request, { params }) {
     // 1. Update in MongoDB Atlas
     try {
       await connectToDatabase();
-      const query = {
-        $or: [
-          ...(id.length === 24 ? [{ _id: id }] : []),
-          { rollNo: id },
-          { rollNo: cleanRollNo }
-        ]
+      
+      const orConditions = [];
+      if (id && mongoose.Types.ObjectId.isValid(id)) {
+        orConditions.push({ _id: new mongoose.Types.ObjectId(id) });
+      }
+      if (id) {
+        orConditions.push({ rollNo: id });
+      }
+      if (phone) {
+        orConditions.push({ phone: phone });
+      }
+      if (email) {
+        orConditions.push({ email: email });
+      }
+      if (cleanRollNo) {
+        orConditions.push({ rollNo: cleanRollNo });
+      }
+
+      const updateData = {
+        rollNo: cleanRollNo,
+        course: course.trim(),
+        feeType,
+        remainingFee: Number(remainingFee || 0),
+        dueDate: dueDate || '',
+        installments,
+        currentInstallment: 1,
+        totalInstallments: Number(totalInstallments || (installments.length || 1)),
+        status: 'approved',
+        isApproved: true
       };
 
+      if (name) updateData.name = name;
+      if (phone) updateData.phone = phone;
+      if (email) updateData.email = email;
+
       const updatedDoc = await Student.findOneAndUpdate(
-        query,
-        {
-          rollNo: cleanRollNo,
-          course: course.trim(),
-          feeType,
-          remainingFee: Number(remainingFee || 0),
-          dueDate: dueDate || '',
-          installments,
-          currentInstallment: 1,
-          totalInstallments: Number(totalInstallments || (installments.length || 1)),
-          status: 'approved',
-          isApproved: true
-        },
+        { $or: orConditions },
+        { $set: updateData },
         { new: true }
       ).lean();
 

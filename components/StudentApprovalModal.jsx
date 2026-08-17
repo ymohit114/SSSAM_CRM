@@ -11,13 +11,21 @@ export default function StudentApprovalModal({
   isOpen,
   onClose,
   onApproved,
-  existingCount = 0
+  existingCount = 0,
+  approvedStudents = []
 }) {
   if (!isOpen || !student) return null;
 
-  const defaultRollNo = `SSSAM-${existingCount + 101}`;
+  // Calculate highest existing roll number
+  const maxRollNum = (approvedStudents || []).reduce((max, s) => {
+    const match = s.rollNo && s.rollNo.match(/SSSAM-(\d+)/i);
+    return match ? Math.max(max, parseInt(match[1], 10)) : max;
+  }, 100);
+  const defaultRollNo = `SSSAM-${Math.max(maxRollNum + 1, existingCount + 101)}`;
 
-  const [rollNo, setRollNo] = useState(student.rollNo && !student.rollNo.startsWith('TEMP') ? student.rollNo : defaultRollNo);
+  const [rollNo, setRollNo] = useState(
+    student.rollNo && !student.rollNo.startsWith('TEMP') ? student.rollNo : defaultRollNo
+  );
   const [course, setCourse] = useState(student.course && student.course !== 'Not Assigned Yet' ? student.course : 'Full Stack Web Development');
   const [feeType, setFeeType] = useState('single'); // 'single' | 'installment'
 
@@ -77,6 +85,9 @@ export default function StudentApprovalModal({
       const payload = {
         rollNo: rollNo.trim().toUpperCase(),
         course: course.trim(),
+        phone: student.phone,
+        email: student.email,
+        name: student.name,
         feeType,
         remainingFee,
         dueDate,

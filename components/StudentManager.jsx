@@ -510,6 +510,7 @@ export default function StudentManager({
           student={approvalModalStudent}
           isOpen={Boolean(approvalModalStudent)}
           existingCount={approvedStudents.length}
+          approvedStudents={approvedStudents}
           onClose={() => setApprovalModalStudent(null)}
           onApproved={() => {
             setApprovalModalStudent(null);
