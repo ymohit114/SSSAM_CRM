@@ -214,22 +214,11 @@ export default function StudentPortalPage() {
               </div>
             </div>
 
-            {/* Center Time (Desktop) */}
+            {/* Center Live Clock (Desktop) */}
             <div className="hidden md:flex items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700/50 shadow-inner">
                 <Clock className="w-4 h-4 text-blue-400" />
                 <div className="text-xs font-mono font-bold text-white tracking-wider">{formattedTime}</div>
-              </div>
-
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium ${
-                isInside
-                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                  : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
-              }`}>
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
-                <span>
-                  {isInside ? `Inside (${Math.round(distance)}m)` : `Outside (${Math.round(distance)}m)`}
-                </span>
               </div>
             </div>
 
@@ -262,13 +251,10 @@ export default function StudentPortalPage() {
         </div>
       </header>
 
-      {/* Main Content: Course & Fee Card + Student Punch Card */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      {/* Main Content: Clean Focused Center Layout */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
         
-        {/* Enrolled Course & Remaining Fee Section */}
-        <StudentFeeCard student={currentUser} />
-
-        {/* GPS Geofenced Attendance Punch Card */}
+        {/* GPS Geofenced Attendance Punch Card (Primary Action) */}
         <StudentPunchCard
           students={[currentUser]}
           institute={institute}
@@ -281,6 +267,10 @@ export default function StudentPortalPage() {
           onPunchIn={handlePunchIn}
           onPunchOut={handlePunchOut}
         />
+
+        {/* Enrolled Course & Remaining Fee Section (Compact & Collapsible) */}
+        <StudentFeeCard student={currentUser} />
+
       </main>
 
       {/* In-App Update Modal */}

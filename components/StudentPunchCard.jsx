@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, CheckCircle2, XCircle, Clock, AlertTriangle,
-  RefreshCw, Navigation, Sparkles, LogIn, LogOut, BellRing, Info
+  RefreshCw, Navigation, Sparkles, LogIn, LogOut, BellRing, ChevronDown, ChevronUp, Layers, BookOpen
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import dynamic from 'next/dynamic';
@@ -34,6 +34,7 @@ export default function StudentPunchCard({
   const [statusMessage, setStatusMessage] = useState(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [activeFeeReminder, setActiveFeeReminder] = useState(null);
+  const [showMap, setShowMap] = useState(false);
 
   // Initialize notification permissions on mount
   useEffect(() => {
@@ -109,18 +110,14 @@ export default function StudentPunchCard({
   // Check fee status whenever student changes
   useEffect(() => {
     if (selectedStudent) {
-      const feeCheck = checkStudentFeeDueStatus(selectedStudent);
-      if (feeCheck.hasReminder) {
-        setActiveFeeReminder(feeCheck);
-      } else {
-        setActiveFeeReminder(null);
-      }
+      const feeStatus = checkStudentFeeDueStatus(selectedStudent);
+      setActiveFeeReminder(feeStatus);
     }
   }, [selectedStudent]);
 
-  // Start Geofence Exit Watcher while punched in
+  // Start background geofence exit watcher if punched in
   useEffect(() => {
-    if (todayRecord && todayRecord.punchInTime && !todayRecord.punchOutTime && institute) {
+    if (todayRecord && todayRecord.punchInTime && !todayRecord.punchOutTime && selectedStudentId && institute?.latitude) {
       startGeofenceWatcher({
         studentId: selectedStudentId,
         studentName: selectedStudent?.name,
@@ -149,22 +146,25 @@ export default function StudentPunchCard({
   };
 
   const handlePunchIn = async () => {
-    // 1. Check if GPS position is acquired
+    if (!selectedStudentId) {
+      setStatusMessage({ type: 'error', text: 'Please select a student first.' });
+      return;
+    }
+
     if (!gpsPosition || distance == null) {
       sounds.playError();
       setStatusMessage({
         type: 'error',
-        text: '⚠️ GPS Location not detected yet. Please allow location permissions in your browser and tap "Refresh GPS Location".'
+        text: '⚠️ GPS Location not detected. Please allow location permissions and tap "Refresh GPS".'
       });
       return;
     }
 
-    // 2. Strict Geofence Enforcement: Must be within 50m radius
     if (!isInside) {
       sounds.playError();
       setStatusMessage({
         type: 'error',
-        text: `❌ Punch In Blocked: You are ${Math.round(distance)}m away from ${institute?.name || 'SSSAM Academy'}. Maximum allowed distance is ${maxRadius}m. Please be inside campus.`
+        text: `❌ You are ${Math.round(distance)}m away from ${institute?.name || 'campus'}. Please be inside the 25m campus perimeter.`
       });
       return;
     }
@@ -192,25 +192,15 @@ export default function StudentPunchCard({
         setTodayRecord(res.record);
         setStatusMessage({
           type: 'success',
-          text: `🎉 Attendance Marked! Status: ${res.record.status} at ${res.record.punchInTime}`
+          text: `🎉 Attendance Marked at ${formatISTTime(res.record.punchInTime)}!`
         });
 
-        // 1. Dispatch Native Confirmation Notification
+        // Dispatch Native Notification
         sendLocalNotification({
           id: 1001,
           title: "✅ SSSAM Punch In Recorded",
-          body: `Attendance marked successfully at ${res.record.punchInTime}. Welcome to SSSAM Academy!`
+          body: `Attendance marked successfully at ${formatISTTime(res.record.punchInTime)}. Welcome to SSSAM Academy!`
         });
-
-        // 2. If fee is due within 7 days, trigger immediate fee notification
-        if (res.feeReminder && res.feeReminder.hasReminder) {
-          setActiveFeeReminder(res.feeReminder);
-          sendLocalNotification({
-            id: 1002,
-            title: res.feeReminder.isOverdue ? "🚨 SSSAM Overdue Fee Notice" : "📌 SSSAM Fee Due Reminder",
-            body: res.feeReminder.punchInMessage
-          });
-        }
       }
     } catch (err) {
       sounds.playError();
@@ -229,7 +219,7 @@ export default function StudentPunchCard({
       sounds.playError();
       setStatusMessage({
         type: 'error',
-        text: '⚠️ GPS Location not detected yet. Please allow location permissions and tap "Refresh GPS Location".'
+        text: '⚠️ GPS Location not detected yet. Please tap "Refresh GPS".'
       });
       return;
     }
@@ -238,7 +228,7 @@ export default function StudentPunchCard({
       sounds.playError();
       setStatusMessage({
         type: 'error',
-        text: `❌ Punch Out Blocked: You are ${Math.round(distance)}m away from campus. Maximum allowed distance is ${maxRadius}m.`
+        text: `❌ You are ${Math.round(distance)}m away from campus. Must be inside 25m boundary to punch out.`
       });
       return;
     }
@@ -248,12 +238,12 @@ export default function StudentPunchCard({
     setShowStudyModal(true);
   };
 
-  // Step 2: Confirm Punch Out after entering minimum 20 characters
+  // Step 2: Confirm Punch Out
   const handleConfirmPunchOut = async (e) => {
     if (e) e.preventDefault();
 
     if (!studySummary || studySummary.trim().length < 20) {
-      setStudyError(`Please enter at least 20 characters. Current length: ${studySummary.trim().length}`);
+      setStudyError(`Please write what you studied today (min 20 chars). Current: ${studySummary.trim().length}`);
       return;
     }
 
@@ -278,24 +268,23 @@ export default function StudentPunchCard({
       if (res.success) {
         sounds.playPunchOut();
         setTodayRecord(res.record);
-        stopGeofenceWatcher(); // Stop geofence exit watcher
+        stopGeofenceWatcher();
         setShowStudyModal(false);
         setStudySummary('');
         setStatusMessage({
           type: 'success',
-          text: `👋 Punch Out recorded at ${res.record.punchOutTime}. Duration: ${Math.floor(res.record.durationMinutes / 60)}h ${res.record.durationMinutes % 60}m`
+          text: `👋 Punch Out recorded at ${formatISTTime(res.record.punchOutTime)}. Duration: ${Math.floor(res.record.durationMinutes / 60)}h ${res.record.durationMinutes % 60}m`
         });
 
-        // Dispatch Native Punch Out Confirmation Notification
         sendLocalNotification({
-          id: 2001,
+          id: 1003,
           title: "👋 SSSAM Punch Out Recorded",
-          body: `Punch Out recorded at ${res.record.punchOutTime}. Duration: ${Math.floor(res.record.durationMinutes / 60)}h ${res.record.durationMinutes % 60}m. Great study session today!`
+          body: `Punch Out saved at ${formatISTTime(res.record.punchOutTime)}. Great work today!`
         });
       }
     } catch (err) {
       sounds.playError();
-      setStudyError(err.message || "Punch Out failed.");
+      setStudyError(err.message || 'Punch Out failed.');
     } finally {
       setPunching(false);
     }
@@ -306,392 +295,286 @@ export default function StudentPunchCard({
   const maxRadius = institute?.geofenceRadius || 25;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4">
       
+      {/* 7-Day Fee Alert (Only if active) */}
+      {activeFeeReminder && activeFeeReminder.hasReminder && (
+        <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs shadow-md animate-fade-in ${
+          activeFeeReminder.isOverdue
+            ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+            : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <BellRing className="w-4 h-4 flex-shrink-0 animate-bounce" />
+            <span>{activeFeeReminder.punchInMessage}</span>
+          </div>
+          <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-black/30 text-white flex-shrink-0">
+            Due: {activeFeeReminder.dueDate}
+          </span>
+        </div>
+      )}
 
-
-      {/* Main Punch Card */}
-      <div className="glass-panel-glow rounded-3xl p-5 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+      {/* Main Clean Punch Card */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-xl space-y-6">
         
-        {/* 7-Day Fee Due Date Alert Banner */}
-        {activeFeeReminder && activeFeeReminder.hasReminder && (
-          <div className={`p-4 rounded-2xl border flex items-start gap-3.5 shadow-lg animate-fade-in ${
-            activeFeeReminder.isOverdue
-              ? 'bg-rose-950/80 border-rose-500/50 text-rose-200 shadow-rose-950/40'
-              : 'bg-amber-950/80 border-amber-500/50 text-amber-200 shadow-amber-950/40'
-          }`}>
-            <div className={`p-2 rounded-xl flex-shrink-0 ${
-              activeFeeReminder.isOverdue ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'
-            }`}>
-              <BellRing className="w-5 h-5 animate-bounce" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between flex-wrap gap-1">
-                <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
-                  {activeFeeReminder.isOverdue ? '🚨 Fee Payment Overdue!' : '🔔 Upcoming Fee Due Date Alert'}
-                </span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  activeFeeReminder.isOverdue ? 'bg-rose-500/30 text-rose-300' : 'bg-amber-500/30 text-amber-300'
-                }`}>
-                  {activeFeeReminder.daysLabel}
-                </span>
-              </div>
-              <p className="text-xs opacity-90 leading-relaxed">
-                {activeFeeReminder.punchInMessage}
-              </p>
-              <div className="text-[11px] font-mono opacity-80 pt-0.5">
-                Remaining Balance: <strong className="text-white">₹{activeFeeReminder.remainingFee.toLocaleString('en-IN')}</strong> • Due Date: <strong className="text-white">{activeFeeReminder.dueDate}</strong>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Logged-in Student Account Banner */}
-        {selectedStudent && (
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between flex-wrap gap-3 shadow-inner">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-black text-white text-base shadow-md flex-shrink-0">
-                {selectedStudent.name ? selectedStudent.name.charAt(0).toUpperCase() : 'S'}
-              </div>
-              <div>
-                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <span>{selectedStudent.name}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    Enrolled Student
-                  </span>
-                </div>
-                <div className="text-xs font-mono text-slate-400 flex items-center gap-2 mt-0.5">
-                  <span className="text-blue-400 font-semibold">{selectedStudent.rollNo}</span>
-                  {selectedStudent.course && <span>• {selectedStudent.course}</span>}
-                </div>
-              </div>
-            </div>
-
-            {selectedStudent.phone && (
-              <div className="text-xs font-mono text-slate-300 bg-slate-800/90 px-3.5 py-2 rounded-xl border border-slate-700/70 flex items-center gap-2 shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Phone: <strong className="text-white">{selectedStudent.phone}</strong></span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Center: Geofence Radar Distance Gauge */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        {/* Top Status & GPS Bar */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800/80">
           
-          <div className="space-y-4">
-            <div className={`rounded-2xl p-5 border text-center transition-all ${
-              distance == null
-                ? 'bg-slate-900/90 border-slate-800'
-                : isInside
-                ? 'bg-emerald-950/40 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-                : 'bg-rose-950/40 border-rose-500/40 shadow-lg shadow-rose-500/10'
-            }`}>
-              
-              <div className="flex items-center justify-center gap-2 mb-2">
-                {distance == null ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    <Clock className="w-4 h-4 text-amber-400 animate-spin" />
-                    ACQUIRING GPS SIGNAL
-                  </span>
-                ) : isInside ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    INSIDE CAMPUS (ELIGIBLE)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                    <XCircle className="w-4 h-4 text-rose-400" />
-                    OUTSIDE CAMPUS (BLOCKED)
-                  </span>
-                )}
-              </div>
-
-              <div className="my-3">
-                <div className="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">
-                  {distance != null ? `${Math.round(distance)}` : '--'}
-                  <span className="text-lg sm:text-xl font-medium text-slate-400 ml-1.5">meters</span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Distance from <strong>{institute?.name || 'SSSAM Academy'}</strong> (Max Allowed: {maxRadius}m)
-                </p>
-              </div>
-
-              {distance != null ? (
-                <p className={`text-xs font-medium px-3 py-2 rounded-xl border ${
-                  isInside
-                    ? 'bg-emerald-900/30 border-emerald-500/30 text-emerald-200'
-                    : 'bg-rose-900/30 border-rose-500/30 text-rose-200'
-                }`}>
-                  {isInside
-                    ? `✅ GPS confirmed inside ${maxRadius}m geofence (${Math.round(distance)}m away). You can punch in or out now.`
-                    : `❌ You are ${Math.round(distance)}m away. Attendance can only be marked within ${maxRadius}m of institute.`}
-                </p>
-              ) : (
-                <div className="text-xs font-medium px-3 py-2.5 rounded-xl border bg-amber-950/40 border-amber-500/30 text-amber-200 space-y-1 text-left">
-                  <div className="font-bold flex items-center gap-1.5 text-amber-300">
-                    <span>📍 Waiting for GPS Permission / Signal</span>
-                  </div>
-                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                    Browser location permission allow karein aur niche <strong>&quot;Refresh GPS Location&quot;</strong> button dabayein.
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={refreshGPS}
-                  disabled={gpsLoading}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-200 hover:text-white border border-slate-700 hover:bg-slate-700 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${gpsLoading ? 'animate-spin text-blue-400' : 'text-blue-400'}`} />
-                  <span>{gpsLoading ? 'Acquiring GPS...' : 'Refresh GPS Location'}</span>
-                </button>
-              </div>
-
-              {gpsError && (
-                <div className="mt-2.5 text-left text-[11px] text-amber-300 bg-amber-950/60 p-3 rounded-xl border border-amber-500/30 space-y-1">
-                  <div className="font-bold flex items-center gap-1">
-                    <span>⚠️ GPS Note:</span>
-                  </div>
-                  <p className="text-amber-200/80">{gpsError}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Today's Punch Status Box */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Today's Status</span>
-                {todayRecord ? (
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    todayRecord.status === 'Present'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : todayRecord.status === 'Late'
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      : 'bg-slate-700 text-slate-300'
-                  }`}>
-                    {todayRecord.status}
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-400">
-                    Not Punched Today
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
-                <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/50">
-                  <div className="text-slate-400 text-[11px]">Punch In Time</div>
-                  <div className="font-mono font-bold text-white text-sm">
-                    {todayRecord?.punchInTime ? formatISTTime(todayRecord.punchInTime) : '--:--:--'}
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/50">
-                  <div className="text-slate-400 text-[11px]">Punch Out Time</div>
-                  <div className="font-mono font-bold text-white text-sm">
-                    {todayRecord?.punchOutTime ? formatISTTime(todayRecord.punchOutTime) : '--:--:--'}
-                  </div>
-                </div>
-              </div>
-
-              {isPunchedIn && (
-                <div className="flex items-center justify-between bg-blue-950/40 border border-blue-500/30 p-2.5 rounded-xl text-xs">
-                  <div className="flex items-center gap-1.5 text-blue-300 font-medium">
-                    <Clock className="w-3.5 h-3.5 animate-pulse text-blue-400" />
-                    <span>Active Session Duration:</span>
-                  </div>
-                  <div className="font-mono font-bold text-white text-sm">{elapsedTime}</div>
-                </div>
-              )}
-            </div>
-
+          {/* GPS Campus Eligibility Badge */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={refreshGPS}
+              disabled={gpsLoading}
+              title="Refresh GPS Location"
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                distance == null
+                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                  : isInside
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-sm shadow-emerald-500/10'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                distance == null ? 'bg-amber-400 animate-ping' : isInside ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+              }`}></span>
+              <span>
+                {distance == null
+                  ? 'Acquiring GPS...'
+                  : isInside
+                  ? `Inside Campus (${Math.round(distance)}m)`
+                  : `Outside Campus (${Math.round(distance)}m / Max ${maxRadius}m)`}
+              </span>
+              <RefreshCw className={`w-3 h-3 text-slate-400 hover:text-white ${gpsLoading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
-          {/* Right: Live Interactive Map */}
+          {/* Today's Status Badge */}
           <div>
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block flex items-center justify-between">
-              <span>Geofence Boundary Map</span>
-              <span className="text-[11px] text-slate-400 font-normal">{maxRadius}m Radius Visualizer</span>
-            </label>
-
-            <GeofenceMap
-              instituteLat={institute?.latitude}
-              instituteLng={institute?.longitude}
-              instituteRadius={maxRadius}
-              instituteName={institute?.name || "SSSAM Academy"}
-              userLat={gpsPosition ? gpsPosition.latitude : null}
-              userLng={gpsPosition ? gpsPosition.longitude : null}
-              userAccuracy={gpsPosition ? gpsPosition.accuracy : null}
-              isInside={isInside}
-              distance={distance}
-            />
-          </div>
-
-        </div>
-
-        {/* Action Buttons: PUNCH IN & PUNCH OUT */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          
-          {/* PUNCH IN BUTTON */}
-          <button
-            id="btn-punch-in"
-            type="button"
-            disabled={punching || isPunchedIn || isPunchedOut || !isInside}
-            onClick={handlePunchIn}
-            className={`relative group overflow-hidden py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
-              isPunchedIn || isPunchedOut
-                ? 'bg-slate-800/60 text-slate-500 border border-slate-700/50 cursor-not-allowed'
-                : !isInside
-                ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed opacity-60'
-                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white hover:shadow-blue-500/30 hover:scale-[1.02] border border-blue-400/30'
-            }`}
-          >
-            <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span>
-              {punching
-                ? 'Marking Attendance...'
-                : !isInside
-                ? `Outside ${maxRadius}m (Blocked)`
-                : isPunchedIn
-                ? 'Already Punched In'
-                : isPunchedOut
-                ? 'Completed for Today'
-                : 'PUNCH IN'}
-            </span>
-          </button>
-
-          {/* PUNCH OUT BUTTON */}
-          <button
-            id="btn-punch-out"
-            type="button"
-            disabled={punching || !isPunchedIn || isPunchedOut || !isInside}
-            onClick={handleInitiatePunchOut}
-            className={`relative group overflow-hidden py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
-              !isPunchedIn || isPunchedOut
-                ? 'bg-slate-800/60 text-slate-500 border border-slate-700/50 cursor-not-allowed'
-                : !isInside
-                ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed opacity-60'
-                : 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:shadow-amber-500/30 hover:scale-[1.02] border border-amber-400/30'
-            }`}
-          >
-            <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span>
-              {punching
-                ? 'Recording Out...'
-                : !isInside
-                ? `Outside ${maxRadius}m (Blocked)`
-                : isPunchedOut
-                ? 'Punched Out (Done)'
-                : 'PUNCH OUT'}
-            </span>
-          </button>
-
-        </div>
-
-        {/* Feedback Alert Message */}
-        {statusMessage && (
-          <div className={`p-4 rounded-2xl text-sm font-semibold flex items-center gap-3 animate-fade-in ${
-            statusMessage.type === 'success'
-              ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200'
-              : 'bg-rose-950/80 border border-rose-500/50 text-rose-200'
-          }`}>
-            {statusMessage.type === 'success' ? (
-              <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            {todayRecord ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                {todayRecord.status || 'Present'}
+              </span>
             ) : (
-              <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                Not Punched Today
+              </span>
             )}
-            <div>{statusMessage.text}</div>
+          </div>
+        </div>
+
+        {/* Status Messages */}
+        {statusMessage && (
+          <div className={`p-3.5 rounded-2xl border text-xs font-medium animate-fade-in flex items-center justify-between ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
+              : 'bg-rose-950/60 border-rose-500/40 text-rose-200'
+          }`}>
+            <span>{statusMessage.text}</span>
+            <button onClick={() => setStatusMessage(null)} className="text-slate-400 hover:text-white ml-2 text-xs">✕</button>
           </div>
         )}
+
+        {/* PRIMARY ACTION SECTION */}
+        <div className="py-2 text-center space-y-4">
+          
+          {/* Active Session Display (When punched in) */}
+          {isPunchedIn && (
+            <div className="bg-blue-950/30 border border-blue-500/20 rounded-2xl p-4 max-w-sm mx-auto space-y-1">
+              <div className="text-xs text-blue-300 font-medium flex items-center justify-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                <span>Active Study Session</span>
+              </div>
+              <div className="text-3xl sm:text-4xl font-mono font-black text-white tracking-widest">
+                {elapsedTime}
+              </div>
+              <div className="text-[11px] text-slate-400 font-mono">
+                Started at {formatISTTime(todayRecord.punchInTime)}
+              </div>
+            </div>
+          )}
+
+          {/* Large Tactile Punch Button */}
+          <div className="max-w-md mx-auto">
+            {!isPunchedIn && !isPunchedOut && (
+              <button
+                id="btn-punch-in"
+                type="button"
+                disabled={punching || !isInside}
+                onClick={handlePunchIn}
+                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
+                  !isInside
+                    ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white hover:shadow-blue-500/30 hover:scale-[1.02] border border-blue-400/30'
+                }`}
+              >
+                <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>
+                  {punching
+                    ? 'Marking Attendance...'
+                    : !isInside
+                    ? `Outside Campus (${Math.round(distance || 0)}m)`
+                    : 'PUNCH IN'}
+                </span>
+              </button>
+            )}
+
+            {isPunchedIn && (
+              <button
+                id="btn-punch-out"
+                type="button"
+                disabled={punching || !isInside}
+                onClick={handleInitiatePunchOut}
+                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
+                  !isInside
+                    ? 'bg-slate-800/80 text-slate-500 border border-rose-500/30 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:shadow-amber-500/30 hover:scale-[1.02] border border-amber-400/30'
+                }`}
+              >
+                <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>
+                  {punching
+                    ? 'Recording...'
+                    : !isInside
+                    ? `Outside Campus (${Math.round(distance || 0)}m)`
+                    : 'PUNCH OUT & END SESSION'}
+                </span>
+              </button>
+            )}
+
+            {isPunchedOut && (
+              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-1">
+                <div className="text-emerald-400 font-bold text-sm sm:text-base flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Today's Attendance Completed!</span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Great job! You have successfully punched in & out for today.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Minimal Today Summary Stats */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2 text-center text-xs">
+          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
+            <span className="text-[11px] text-slate-400 block">Punch In</span>
+            <span className="font-mono font-bold text-emerald-400 text-sm mt-0.5 block">
+              {todayRecord?.punchInTime ? formatISTTime(todayRecord.punchInTime) : '--:--'}
+            </span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
+            <span className="text-[11px] text-slate-400 block">Punch Out</span>
+            <span className="font-mono font-bold text-amber-400 text-sm mt-0.5 block">
+              {todayRecord?.punchOutTime ? formatISTTime(todayRecord.punchOutTime) : '--:--'}
+            </span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3 rounded-2xl border border-slate-800">
+            <span className="text-[11px] text-slate-400 block">Duration</span>
+            <span className="font-mono font-bold text-white text-sm mt-0.5 block">
+              {todayRecord?.durationMinutes ? `${Math.floor(todayRecord.durationMinutes / 60)}h ${todayRecord.durationMinutes % 60}m` : (isPunchedIn ? elapsedTime : '--')}
+            </span>
+          </div>
+        </div>
+
+        {/* Campus Map Toggle */}
+        <div className="pt-2 border-t border-slate-800/80">
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center justify-between transition-all"
+          >
+            <span className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-blue-400" />
+              <span>Campus Geofence Map ({maxRadius}m Zone)</span>
+            </span>
+            {showMap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {showMap && (
+            <div className="mt-3 rounded-2xl overflow-hidden border border-slate-800 animate-fade-in">
+              <GeofenceMap
+                instituteLat={institute?.latitude}
+                instituteLng={institute?.longitude}
+                instituteRadius={maxRadius}
+                instituteName={institute?.name || "SSSAM Academy"}
+                userLat={gpsPosition ? gpsPosition.latitude : null}
+                userLng={gpsPosition ? gpsPosition.longitude : null}
+                userAccuracy={gpsPosition ? gpsPosition.accuracy : null}
+                isInside={isInside}
+                distance={distance}
+              />
+            </div>
+          )}
+        </div>
 
       </div>
 
-      {/* Mandatory Daily Study / Learning Report Modal on Punch Out */}
+      {/* Study Summary Modal (For Punch Out) */}
       {showStudyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             
-            {/* Header */}
-            <div className="space-y-1.5 border-b border-slate-800 pb-4">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Punch Out Verification</span>
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  Session: <strong className="text-white">{elapsedTime}</strong>
-                </span>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-white">Daily Study Summary</h3>
               </div>
-              
-              <h3 className="text-lg sm:text-xl font-black text-white">
-                Aaj Aapne Kya Padhai Ki? 📚
-              </h3>
-              <p className="text-xs text-slate-400">
-                Please enter your daily study / topic summary before punching out.
-              </p>
+              <button
+                onClick={() => setShowStudyModal(false)}
+                className="text-slate-400 hover:text-white text-sm p-1"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleConfirmPunchOut} className="space-y-4">
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <label className="font-semibold text-slate-300">
-                    Daily Study Log (Min. 20 Characters) *
-                  </label>
-                  <span className={`font-mono font-bold text-[11px] px-2 py-0.5 rounded ${
-                    studySummary.trim().length >= 20
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                  }`}>
-                    {studySummary.trim().length} / 20 {studySummary.trim().length >= 20 ? '✅' : `(Need ${20 - studySummary.trim().length} more)`}
-                  </span>
-                </div>
+            <p className="text-xs text-slate-300">
+              Please enter what topics / practicals you completed today before punch out (min 20 characters):
+            </p>
 
-                <textarea
-                  rows={4}
-                  value={studySummary}
-                  onChange={(e) => {
-                    setStudySummary(e.target.value);
-                    setStudyError('');
-                  }}
-                  autoFocus
-                  required
-                  placeholder="e.g. Aaj maine Mathematics me Calculus ke 15 questions solve kiye aur Physics lecture complete kiya..."
-                  className="w-full bg-slate-800/90 border border-slate-700 rounded-2xl p-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                />
+            <form onSubmit={handleConfirmPunchOut} className="space-y-3">
+              <textarea
+                value={studySummary}
+                onChange={(e) => setStudySummary(e.target.value)}
+                placeholder="e.g. Practiced MS Excel VLOOKUP formulas and completed assignment #4..."
+                rows={4}
+                required
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+
+              <div className="flex items-center justify-between text-[11px]">
+                <span className={studySummary.trim().length >= 20 ? 'text-emerald-400' : 'text-slate-500'}>
+                  {studySummary.trim().length}/20 characters min
+                </span>
               </div>
 
               {studyError && (
-                <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/40 text-xs text-rose-300 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
-                  <span>{studyError}</span>
+                <div className="text-xs text-rose-400 bg-rose-950/40 p-2.5 rounded-xl border border-rose-500/30">
+                  {studyError}
                 </div>
               )}
 
-              {/* Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowStudyModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
                 >
                   Cancel
                 </button>
-                
                 <button
                   type="submit"
                   disabled={punching || studySummary.trim().length < 20}
-                  className="px-6 py-2.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-xs font-bold text-white shadow-lg"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>{punching ? 'Recording Out...' : 'Submit & Complete Punch Out'}</span>
+                  {punching ? 'Recording...' : 'Confirm Punch Out'}
                 </button>
               </div>
-
             </form>
 
           </div>
