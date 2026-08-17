@@ -7,7 +7,6 @@ import { Shield, Radio, Clock, LogOut, History, User, BookOpen } from 'lucide-re
 import StudentPunchCard from '@/components/StudentPunchCard';
 import StudentFeeCard from '@/components/StudentFeeCard';
 import StudentHistoryModal from '@/components/StudentHistoryModal';
-import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { getCurrentPosition, calculateDistance } from '@/lib/geo';
 
 export default function StudentPortalPage() {
@@ -272,9 +271,6 @@ export default function StudentPortalPage() {
         <StudentFeeCard student={currentUser} />
 
       </main>
-
-      {/* In-App Update Modal */}
-      <InAppUpdateModal />
 
       {/* History Modal */}
       {showHistoryModal && (
