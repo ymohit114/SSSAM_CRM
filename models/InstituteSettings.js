@@ -45,6 +45,6 @@ const InstituteSettingsSchema = new mongoose.Schema({
     type: String,
     default: '1234',
   },
-}, { timestamps: true });
+}, { timestamps: true, collection: 'institutesettings' });
 
-export default mongoose.models.InstituteSettings || mongoose.model('InstituteSettings', InstituteSettingsSchema);
+export default mongoose.models.InstituteSettings || mongoose.model('InstituteSettings', InstituteSettingsSchema, 'institutesettings');
