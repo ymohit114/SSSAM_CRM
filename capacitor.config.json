@@ -17,9 +17,6 @@
       "smallIcon": "ic_launcher",
       "iconColor": "#3B82F6",
       "sound": "default"
-    },
-    "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }
