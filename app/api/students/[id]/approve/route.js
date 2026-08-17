@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import { connectToDatabase } from '@/lib/mongodb';
+import { calculateStudentFee } from '@/lib/feeHelper';
 
 export async function POST(request, { params }) {
   try {
@@ -24,44 +25,90 @@ export async function POST(request, { params }) {
       }, { status: 400 });
     }
 
-    // Approve in local database
-    const approvedStudent = db.approveStudent(id, {
-      rollNo,
-      course,
-      feeType,
-      remainingFee: Number(remainingFee || 0),
-      dueDate: dueDate || '',
-      installments,
-      totalInstallments
-    });
+    const cleanRollNo = rollNo.trim().toUpperCase();
+    let approvedStudent = null;
 
-    // Sync approval to MongoDB Atlas
+    // 1. Update in MongoDB Atlas
     try {
       await connectToDatabase();
-      await Student.findOneAndUpdate(
-        { $or: [{ _id: id.length === 24 ? id : null }, { phone: approvedStudent.phone }, { email: approvedStudent.email }] },
+      const query = {
+        $or: [
+          ...(id.length === 24 ? [{ _id: id }] : []),
+          { rollNo: id },
+          { rollNo: cleanRollNo }
+        ]
+      };
+
+      const updatedDoc = await Student.findOneAndUpdate(
+        query,
         {
-          rollNo: approvedStudent.rollNo,
-          course: approvedStudent.course,
-          feeType: approvedStudent.feeType,
-          remainingFee: approvedStudent.remainingFee,
-          dueDate: approvedStudent.dueDate,
-          installments: approvedStudent.installments,
-          currentInstallment: approvedStudent.currentInstallment,
-          totalInstallments: approvedStudent.totalInstallments,
+          rollNo: cleanRollNo,
+          course: course.trim(),
+          feeType,
+          remainingFee: Number(remainingFee || 0),
+          dueDate: dueDate || '',
+          installments,
+          currentInstallment: 1,
+          totalInstallments: Number(totalInstallments || (installments.length || 1)),
           status: 'approved',
           isApproved: true
         },
-        { new: true, upsert: true }
-      );
-    } catch (e) {
-      console.warn('MongoDB Atlas approval sync note:', e.message);
+        { new: true }
+      ).lean();
+
+      if (updatedDoc) {
+        approvedStudent = {
+          id: updatedDoc._id.toString(),
+          rollNo: updatedDoc.rollNo,
+          name: updatedDoc.name,
+          phone: updatedDoc.phone,
+          email: updatedDoc.email,
+          password: updatedDoc.password,
+          status: 'approved',
+          isApproved: true,
+          course: updatedDoc.course,
+          feeType: updatedDoc.feeType,
+          remainingFee: updatedDoc.remainingFee,
+          dueDate: updatedDoc.dueDate,
+          installments: updatedDoc.installments,
+          currentInstallment: updatedDoc.currentInstallment,
+          totalInstallments: updatedDoc.totalInstallments,
+          gender: updatedDoc.gender || 'Male'
+        };
+      }
+    } catch (mongoErr) {
+      console.warn('MongoDB approval update note:', mongoErr.message);
     }
+
+    // 2. Also try approving in local db
+    try {
+      const localResult = db.approveStudent(id, {
+        rollNo: cleanRollNo,
+        course,
+        feeType,
+        remainingFee: Number(remainingFee || 0),
+        dueDate: dueDate || '',
+        installments,
+        totalInstallments
+      });
+      if (!approvedStudent) approvedStudent = localResult;
+    } catch (localErr) {
+      console.log('Local db approve note:', localErr.message);
+    }
+
+    if (!approvedStudent) {
+      return NextResponse.json({ success: false, message: 'Student record not found for approval.' }, { status: 404 });
+    }
+
+    const studentWithFee = {
+      ...approvedStudent,
+      feeInfo: calculateStudentFee(approvedStudent)
+    };
 
     return NextResponse.json({
       success: true,
       message: `Student ${approvedStudent.name} (${approvedStudent.rollNo}) has been approved and activated!`,
-      student: approvedStudent
+      student: studentWithFee
     });
   } catch (err) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import Student from '@/models/Student';
+import { connectToDatabase } from '@/lib/mongodb';
 import { calculateDistance } from '@/lib/geo';
 import { checkStudentFeeDueStatus } from '@/lib/feeReminderService';
 
@@ -12,7 +14,40 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
     }
 
-    const student = db.getStudentById(studentId);
+    let student = db.getStudentById(studentId);
+
+    // Fallback: check MongoDB Atlas
+    if (!student) {
+      try {
+        await connectToDatabase();
+        const doc = await Student.findOne({
+          $or: [
+            ...(studentId.length === 24 ? [{ _id: studentId }] : []),
+            { rollNo: studentId }
+          ]
+        }).lean();
+
+        if (doc) {
+          student = {
+            id: doc._id.toString(),
+            rollNo: doc.rollNo,
+            name: doc.name,
+            phone: doc.phone,
+            email: doc.email,
+            password: doc.password,
+            course: doc.course,
+            feeType: doc.feeType,
+            remainingFee: doc.remainingFee,
+            dueDate: doc.dueDate,
+            status: doc.status || 'approved',
+            isApproved: doc.isApproved
+          };
+        }
+      } catch (e) {
+        console.warn('MongoDB student lookup note:', e.message);
+      }
+    }
+
     if (!student) {
       return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
     }
@@ -41,7 +76,7 @@ export async function POST(request) {
     const status = "Present";
 
     const record = db.recordPunchIn({
-      studentId: student.id,
+      studentId: student.id || student.rollNo,
       date: dateStr,
       time: timeStr,
       lat: userLat || institute.latitude,
