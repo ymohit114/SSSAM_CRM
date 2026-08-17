@@ -5,7 +5,7 @@
     "address": "Main Campus, Knowledge Park, India",
     "latitude": 28.470452,
     "longitude": 77.044462,
-    "geofenceRadius": 50,
+    "geofenceRadius": 25,
     "requirePhoto": false,
     "startTime": "09:00",
     "lateThresholdMinutes": 15,
@@ -175,6 +175,27 @@
       "remarks": "Punched in 15m from academy",
       "timestamp": "2026-08-17T12:08:55.675Z",
       "studySummary": "Shsbsnsbsbnsnssnsnsnns"
+    },
+    {
+      "id": "att-1786973281581",
+      "date": "2026-08-17",
+      "studentId": "6a8307706f229c4f38890556",
+      "rollNo": "SSSAM-104",
+      "studentName": "Satish",
+      "punchInTime": "18:58:01",
+      "punchInLat": 28.257,
+      "punchInLng": 76.853,
+      "punchInDistance": 30237.3,
+      "punchInSelfie": null,
+      "punchOutTime": null,
+      "punchOutLat": null,
+      "punchOutLng": null,
+      "punchOutDistance": null,
+      "punchOutSelfie": null,
+      "durationMinutes": 0,
+      "status": "Present",
+      "remarks": "Punched in 30237m from academy",
+      "timestamp": "2026-08-17T13:28:01.582Z"
     }
   ]
 }

@@ -120,7 +120,7 @@ export default function GeofenceMap({
 
         layers.userMarker = L.marker([userLat, userLng], { icon: userIcon })
           .addTo(map)
-          .bindPopup(`<b>Your GPS Location</b><br>Distance: ${Math.round(distance)}m<br>Status: ${isInside ? 'Inside 50m Allowed Zone ✅' : 'Outside Campus ❌'}`);
+          .bindPopup(`<b>Your GPS Location</b><br>Distance: ${Math.round(distance)}m<br>Status: ${isInside ? `Inside ${instituteRadius || 25}m Allowed Zone ✅` : 'Outside Campus ❌'}`);
 
         if (userAccuracy && userAccuracy < 100) {
           layers.userAccuracyCircle = L.circle([userLat, userLng], {

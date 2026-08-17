@@ -82,7 +82,7 @@ export async function GET(request, { params }) {
         parseFloat(lng),
         institute.latitude,
         institute.longitude,
-        institute.geofenceRadius || 50
+        institute.geofenceRadius || 25
       );
       distance = geoCheck.distance;
       isWithin = geoCheck.isWithin;
@@ -96,7 +96,7 @@ export async function GET(request, { params }) {
         name: institute.name,
         latitude: institute.latitude,
         longitude: institute.longitude,
-        geofenceRadius: institute.geofenceRadius || 50
+        geofenceRadius: institute.geofenceRadius || 25
       },
       currentDistance: distance,
       isWithinGeofence: isWithin

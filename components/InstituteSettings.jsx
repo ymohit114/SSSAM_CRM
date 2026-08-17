@@ -20,7 +20,7 @@ export default function InstituteSettings({
     address: 'Main Campus, Knowledge Park, India',
     latitude: 28.470452,
     longitude: 77.044462,
-    geofenceRadius: 50,
+    geofenceRadius: 25,
     startTime: '09:00',
     lateThresholdMinutes: 15,
     endTime: '17:00',
@@ -40,7 +40,7 @@ export default function InstituteSettings({
         address: institute.address || '',
         latitude: institute.latitude || 28.613939,
         longitude: institute.longitude || 77.209021,
-        geofenceRadius: institute.geofenceRadius || 50,
+        geofenceRadius: institute.geofenceRadius || 25,
         startTime: institute.startTime || '09:00',
         lateThresholdMinutes: institute.lateThresholdMinutes || 15,
         endTime: institute.endTime || '17:00',
@@ -189,9 +189,9 @@ export default function InstituteSettings({
             />
 
             <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>10m (Strict Room)</span>
-              <span className="text-blue-400 font-bold">50m (Standard Institute Boundary)</span>
-              <span>500m (Campus Wide)</span>
+              <span>10m (Classroom)</span>
+              <span className="text-blue-400 font-bold">25m (Academy Boundary)</span>
+              <span>100m (Extended)</span>
             </div>
           </div>
 

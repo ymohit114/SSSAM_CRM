@@ -57,7 +57,7 @@ export default function Navbar({
                   {instituteName}
                 </h1>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                  GEOFENCE 50M
+                  GEOFENCE 25M
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-400 font-medium">

@@ -21,7 +21,7 @@ export default function StudentPortalPage() {
     tagline: 'Excellence in Education & Training',
     latitude: 28.470452,
     longitude: 77.044462,
-    geofenceRadius: 50,
+    geofenceRadius: 25,
     startTime: '09:00',
     lateThresholdMinutes: 15
   });
@@ -127,7 +127,7 @@ export default function StudentPortalPage() {
 
   let distance = null;
   let isInside = false;
-  const maxRadius = institute?.geofenceRadius || 50;
+  const maxRadius = institute?.geofenceRadius || 25;
 
   if (gpsPosition && institute?.latitude && institute?.longitude) {
     distance = calculateDistance(
@@ -202,7 +202,7 @@ export default function StudentPortalPage() {
                     {institute.name}
                   </h1>
                   <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    50M GEOFENCE
+                    {maxRadius}M GEOFENCE
                   </span>
                 </div>
                 <div className="text-xs text-slate-300 font-semibold flex items-center gap-1.5 mt-0.5">

@@ -127,7 +127,7 @@ export default function StudentPunchCard({
         studentName: selectedStudent?.name,
         instituteLat: institute.latitude,
         instituteLng: institute.longitude,
-        geofenceRadius: institute.geofenceRadius || 50,
+        geofenceRadius: institute.geofenceRadius || 25,
         isPunchedIn: true,
         isPunchedOut: false
       });
@@ -310,7 +310,7 @@ export default function StudentPunchCard({
 
   const isPunchedIn = todayRecord && todayRecord.punchInTime && !todayRecord.punchOutTime;
   const isPunchedOut = todayRecord && todayRecord.punchOutTime;
-  const maxRadius = institute?.geofenceRadius || 50;
+  const maxRadius = institute?.geofenceRadius || 25;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -573,7 +573,7 @@ export default function StudentPunchCard({
           <div>
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block flex items-center justify-between">
               <span>Geofence Boundary Map</span>
-              <span className="text-[11px] text-slate-400 font-normal">50m Radius Visualizer</span>
+              <span className="text-[11px] text-slate-400 font-normal">{maxRadius}m Radius Visualizer</span>
             </label>
 
             <GeofenceMap
@@ -613,7 +613,7 @@ export default function StudentPunchCard({
               {punching
                 ? 'Marking Attendance...'
                 : !isInside
-                ? 'Outside 50m (Blocked)'
+                ? `Outside ${maxRadius}m (Blocked)`
                 : isPunchedIn
                 ? 'Already Punched In'
                 : isPunchedOut
@@ -641,7 +641,7 @@ export default function StudentPunchCard({
               {punching
                 ? 'Recording Out...'
                 : !isInside
-                ? 'Outside 50m (Blocked)'
+                ? `Outside ${maxRadius}m (Blocked)`
                 : isPunchedOut
                 ? 'Punched Out (Done)'
                 : 'PUNCH OUT'}

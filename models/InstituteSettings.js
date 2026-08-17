@@ -23,7 +23,7 @@ const InstituteSettingsSchema = new mongoose.Schema({
   },
   geofenceRadius: {
     type: Number,
-    default: 50, // 50 meters
+    default: 25, // 25 meters
   },
   requirePhoto: {
     type: Boolean,

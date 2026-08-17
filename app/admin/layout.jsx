@@ -348,7 +348,7 @@ export default function AdminLayout({ children }) {
         <header className="hidden md:flex items-center justify-between px-8 py-4 bg-slate-900/60 border-b border-slate-800/80 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span className="text-xs font-bold text-slate-300">Live Campus Geofence Active (50m)</span>
+            <span className="text-xs font-bold text-slate-300">Live Campus Geofence Active (25m)</span>
           </div>
 
           <div className="flex items-center gap-3 text-xs">

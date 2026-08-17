@@ -41,7 +41,7 @@ export default function DownloadPage() {
         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 text-left space-y-2.5 text-xs text-slate-300">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>High-Accuracy Native 50m GPS Attendance</span>
+            <span>High-Accuracy Native 25m GPS Attendance</span>
           </div>
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />

@@ -57,7 +57,7 @@ export async function POST(request) {
     }
 
     const institute = db.getInstitute();
-    const maxRadius = institute.geofenceRadius || 50;
+    const maxRadius = institute.geofenceRadius || 25;
 
     let userLat = parseFloat(lat);
     let userLng = parseFloat(lng);
