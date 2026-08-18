@@ -115,20 +115,23 @@ export default function StudentPunchCard({
     }
   }, [selectedStudent]);
 
-  // Start background geofence exit watcher if punched in
+  // Start background geofence watcher for BOTH:
+  // 1. Entry alert when arriving on campus before punch in
+  // 2. Exit alert when leaving campus before punch out
   useEffect(() => {
-    if (todayRecord && todayRecord.punchInTime && !todayRecord.punchOutTime && selectedStudentId && institute?.latitude) {
+    if (selectedStudentId && institute?.latitude) {
+      const isPunchedIn = Boolean(todayRecord?.punchInTime && !todayRecord?.punchOutTime);
+      const isPunchedOut = Boolean(todayRecord?.punchOutTime);
+
       startGeofenceWatcher({
         studentId: selectedStudentId,
         studentName: selectedStudent?.name,
         instituteLat: institute.latitude,
         instituteLng: institute.longitude,
         geofenceRadius: institute.geofenceRadius || 25,
-        isPunchedIn: true,
-        isPunchedOut: false
+        isPunchedIn,
+        isPunchedOut
       });
-    } else {
-      stopGeofenceWatcher();
     }
 
     return () => {
@@ -380,28 +383,37 @@ export default function StudentPunchCard({
           )}
 
           {/* Large High-Contrast Tactile Punch Button */}
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto space-y-2">
             {!isPunchedIn && !isPunchedOut && (
-              <button
-                id="btn-punch-in"
-                type="button"
-                disabled={punching || !isInside}
-                onClick={handlePunchIn}
-                className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
-                  !isInside
-                    ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
-                    : 'bg-black text-white hover:bg-slate-800 shadow-2xl hover:scale-[1.02]'
-                }`}
-              >
-                <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span>
-                  {punching
-                    ? 'Marking Attendance...'
-                    : !isInside
-                    ? `Outside Campus (${Math.round(distance || 0)}m)`
-                    : 'PUNCH IN'}
-                </span>
-              </button>
+              <>
+                {isInside && (
+                  <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-xs font-semibold text-slate-800 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
+                    <MapPin className="w-4 h-4 text-black" />
+                    <span>📍 Welcome! You are inside campus. Tap below to Punch In:</span>
+                  </div>
+                )}
+
+                <button
+                  id="btn-punch-in"
+                  type="button"
+                  disabled={punching || !isInside}
+                  onClick={handlePunchIn}
+                  className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
+                    !isInside
+                      ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-slate-800 shadow-2xl hover:scale-[1.02]'
+                  }`}
+                >
+                  <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span>
+                    {punching
+                      ? 'Marking Attendance...'
+                      : !isInside
+                      ? `Outside Campus (${Math.round(distance || 0)}m)`
+                      : 'PUNCH IN'}
+                  </span>
+                </button>
+              </>
             )}
 
             {isPunchedIn && (
