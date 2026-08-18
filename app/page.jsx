@@ -286,8 +286,12 @@ export default function StudentPortalPage() {
           <div>
             Logged in as <strong className="text-slate-800">{currentUser.name}</strong> ({currentUser.rollNo})
           </div>
-          <div>
-            &copy; {new Date().getFullYear()} {institute.name}. All rights reserved.
+          <div className="flex items-center gap-4">
+            <Link href="/privacy-policy" className="hover:text-slate-900 underline">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <span>&copy; {new Date().getFullYear()} {institute.name}</span>
           </div>
         </div>
       </footer>
