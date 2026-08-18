@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, UserCheck, Clock, AlertTriangle, UserX,
-  Search, PlusCircle, RefreshCw, Eye, MapPin, ShieldCheck
+  Search, PlusCircle, RefreshCw, Eye, MapPin, ShieldCheck, LogOut, CheckCircle2
 } from 'lucide-react';
 import ManualAttendanceModal from './ManualAttendanceModal';
+import AdminPunchOutModal from './AdminPunchOutModal';
 import { formatISTTime } from '@/lib/indianTime';
 
 export default function AdminDashboard({
@@ -17,6 +18,7 @@ export default function AdminDashboard({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showManualModal, setShowManualModal] = useState(false);
+  const [selectedPunchOut, setSelectedPunchOut] = useState(null);
   const [viewPhotoUrl, setViewPhotoUrl] = useState(null);
 
   const loadTodayAttendance = async () => {
@@ -173,18 +175,20 @@ export default function AdminDashboard({
                 <th className="py-3 px-4">Duration</th>
                 <th className="py-3 px-4">Daily Study Log 📚</th>
                 <th className="py-3 px-4">GPS Dist.</th>
+                <th className="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80 text-slate-300">
               {roster.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-500">
+                  <td colSpan={7} className="text-center py-10 text-slate-500">
                     No students match the search query.
                   </td>
                 </tr>
               ) : (
                 roster.map(({ student, attendance }) => {
                   const isPresent = Boolean(attendance.punchInTime);
+                  const isPunchedIn = isPresent && !attendance.punchOutTime;
                   return (
                     <tr key={student.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4">
@@ -232,6 +236,33 @@ export default function AdminDashboard({
                           </div>
                         ) : '-'}
                       </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        {isPunchedIn ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPunchOut({ student, attendance })}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all active:scale-95 hover:scale-105"
+                            title={`Punch Out ${student.name}`}
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>⚡ Punch Out</span>
+                          </button>
+                        ) : attendance.punchOutTime ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Completed</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowManualModal(true)}
+                            className="text-slate-500 hover:text-slate-300 text-[11px] underline"
+                          >
+                            Manual Entry
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -245,10 +276,24 @@ export default function AdminDashboard({
       {/* Manual Attendance Modal */}
       {showManualModal && (
         <ManualAttendanceModal
+          isOpen={true}
           students={students}
           onClose={() => setShowManualModal(false)}
-          onSuccess={() => {
+          onSaved={() => {
             setShowManualModal(false);
+            loadTodayAttendance();
+          }}
+        />
+      )}
+
+      {/* Admin Quick Punch Out Modal */}
+      {selectedPunchOut && (
+        <AdminPunchOutModal
+          student={selectedPunchOut.student}
+          attendance={selectedPunchOut.attendance}
+          onClose={() => setSelectedPunchOut(null)}
+          onSuccess={() => {
+            setSelectedPunchOut(null);
             loadTodayAttendance();
           }}
         />

@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
-import { getIndianDateTime } from '@/lib/indianTime';
+import { getIndianDateTime, formatISTTime } from '@/lib/indianTime';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,15 +12,21 @@ export const revalidate = 0;
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentId, date, punchInTime, punchOutTime, status, remarks, studySummary } = body;
+    const { studentId, date, punchOutTime, remarks, studySummary } = body;
 
-    if (!studentId || !date) {
-      return NextResponse.json({ success: false, message: 'Student and date are required.' }, { status: 400 });
+    if (!studentId) {
+      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
     }
+
+    const ist = getIndianDateTime();
+    const targetDate = date || ist.dateStr;
+    const finalPunchOutTime = punchOutTime ? (punchOutTime.length === 5 ? `${punchOutTime}:00` : punchOutTime) : ist.timeStr;
+    const finalRemarks = remarks || 'Punched out manually by Admin';
+    const finalStudySummary = studySummary || 'Completed session (Punched out by Admin)';
 
     let student = db.getStudentById(studentId);
 
-    // Atlas fallback lookup
+    // MongoDB Atlas fallback lookup
     if (!student) {
       try {
         await connectToDatabase();
@@ -44,7 +50,7 @@ export async function POST(request) {
           };
         }
       } catch (e) {
-        console.warn('MongoDB student lookup note on manual attendance:', e.message);
+        console.warn('MongoDB student lookup note on admin punch out:', e.message);
       }
     }
 
@@ -52,59 +58,53 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
     }
 
-    const finalPunchIn = punchInTime ? (punchInTime.length === 5 ? `${punchInTime}:00` : punchInTime) : '09:00:00';
-    const finalPunchOut = punchOutTime ? (punchOutTime.length === 5 ? `${punchOutTime}:00` : punchOutTime) : null;
-    const finalStatus = status || 'Present';
-    const finalRemarks = remarks || 'Manual entry by Admin';
-    const finalStudySummary = studySummary || (finalPunchOut ? 'Manual Attendance recorded by Faculty' : '');
-
-    // Calculate duration
-    let durationMinutes = 0;
-    if (finalPunchIn && finalPunchOut) {
-      const [inH, inM] = finalPunchIn.split(':').map(Number);
-      const [outH, outM] = finalPunchOut.split(':').map(Number);
-      durationMinutes = Math.max(0, (outH * 60 + outM) - (inH * 60 + inM));
-    }
-
     // 1. Update Local DB
-    let localRecord = null;
+    let localRecord;
     try {
       localRecord = db.manualAttendanceRecord({
         studentId: student.id || student.rollNo,
-        date,
-        punchInTime: finalPunchIn,
-        punchOutTime: finalPunchOut,
-        status: finalStatus,
+        date: targetDate,
+        punchOutTime: finalPunchOutTime,
+        status: 'Present',
         remarks: finalRemarks
       });
       if (localRecord) {
-        localRecord.durationMinutes = durationMinutes;
         localRecord.studySummary = finalStudySummary;
       }
     } catch (localErr) {
-      console.warn('Local db manual record error:', localErr.message);
+      console.warn('Local db record update note:', localErr.message);
     }
 
-    // 2. Sync to MongoDB Atlas
+    // 2. Sync / Upsert to MongoDB Atlas
     let mongoRecord = null;
     try {
       await connectToDatabase();
       const institute = db.getInstitute();
 
+      // Find existing attendance
       let attDoc = await Attendance.findOne({
         $or: [
-          { studentId: student.id, date },
-          { rollNo: student.rollNo, date }
+          { studentId: student.id, date: targetDate },
+          { rollNo: student.rollNo, date: targetDate }
         ]
       });
 
+      let punchInTimeStr = attDoc?.punchInTime || '09:00:00';
+      
+      // Calculate duration
+      const [inH, inM, inS = 0] = punchInTimeStr.split(':').map(Number);
+      const [outH, outM, outS = 0] = finalPunchOutTime.split(':').map(Number);
+      const durationMinutes = Math.max(0, (outH * 60 + outM) - (inH * 60 + inM));
+
       if (attDoc) {
-        attDoc.punchInTime = finalPunchIn;
-        attDoc.punchOutTime = finalPunchOut;
-        attDoc.status = finalStatus;
-        attDoc.remarks = finalRemarks;
+        attDoc.punchOutTime = finalPunchOutTime;
+        attDoc.punchOutLat = institute.latitude;
+        attDoc.punchOutLng = institute.longitude;
+        attDoc.punchOutDistance = 0;
         attDoc.durationMinutes = durationMinutes;
-        if (finalStudySummary) attDoc.studySummary = finalStudySummary;
+        attDoc.studySummary = finalStudySummary;
+        attDoc.remarks = finalRemarks;
+        attDoc.status = 'Present';
         await attDoc.save();
         mongoRecord = attDoc.toObject();
       } else {
@@ -112,32 +112,34 @@ export async function POST(request) {
           studentId: student.id || student._id,
           rollNo: student.rollNo,
           studentName: student.name,
-          date,
-          punchInTime: finalPunchIn,
+          date: targetDate,
+          punchInTime: punchInTimeStr,
           punchInLat: institute.latitude,
           punchInLng: institute.longitude,
           punchInDistance: 0,
-          punchOutTime: finalPunchOut,
-          punchOutLat: finalPunchOut ? institute.latitude : null,
-          punchOutLng: finalPunchOut ? institute.longitude : null,
+          punchOutTime: finalPunchOutTime,
+          punchOutLat: institute.latitude,
+          punchOutLng: institute.longitude,
           punchOutDistance: 0,
           durationMinutes,
-          status: finalStatus,
-          remarks: finalRemarks,
-          studySummary: finalStudySummary
+          studySummary: finalStudySummary,
+          status: 'Present',
+          remarks: finalRemarks
         });
         mongoRecord = created.toObject();
       }
     } catch (mongoErr) {
-      console.warn('MongoDB manual attendance sync error:', mongoErr.message);
+      console.warn('MongoDB attendance update note on admin punch out:', mongoErr.message);
     }
+
+    const finalRecord = mongoRecord || localRecord;
 
     return NextResponse.json({
       success: true,
-      message: 'Attendance record updated manually.',
-      record: mongoRecord || localRecord
+      message: `Successfully punched out ${student.name} at ${formatISTTime(finalPunchOutTime)}.`,
+      record: finalRecord
     });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message || 'Failed to update attendance.' }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message || 'Failed to punch out student.' }, { status: 500 });
   }
 }
