@@ -218,7 +218,7 @@ export default function StudentApprovalModal({
           <div className="border-t border-slate-800 pt-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                2. Fee Payment Plan (Kisht / Single)
+                2. Fee Payment Plan (Installments / One-Time)
               </div>
 
               {/* Mode Toggle */}
@@ -246,7 +246,7 @@ export default function StudentApprovalModal({
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Installments (Kisht)
+                  Installments Plan
                 </button>
               </div>
             </div>

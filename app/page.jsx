@@ -253,7 +253,10 @@ export default function StudentPortalPage() {
       {/* Main Content: Clean Focused Center Layout */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
         
-        {/* GPS Geofenced Attendance Punch Card (Primary Action) */}
+        {/* Enrolled Course & Remaining Fee Section (Prominently Placed at Top) */}
+        <StudentFeeCard student={currentUser} />
+
+        {/* GPS Geofenced Attendance Punch Card */}
         <StudentPunchCard
           students={[currentUser]}
           institute={institute}
@@ -266,9 +269,6 @@ export default function StudentPortalPage() {
           onPunchIn={handlePunchIn}
           onPunchOut={handlePunchOut}
         />
-
-        {/* Enrolled Course & Remaining Fee Section (Compact & Collapsible) */}
-        <StudentFeeCard student={currentUser} />
 
       </main>
 

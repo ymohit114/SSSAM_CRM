@@ -110,7 +110,7 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <h3 className="text-base font-black text-white">Registration Submitted!</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Aapka account create ho gaya hai aur <strong>Admin approval</strong> ke liye bhej diya gaya hai.
+                  Your account has been created and submitted for <strong>Admin approval</strong>.
                 </p>
               </div>
 
@@ -120,7 +120,7 @@ export default function RegisterPage() {
                   <span>Next Step:</span>
                 </div>
                 <p className="text-[11px]">
-                  Admin aapka <strong>Roll Number</strong> aur <strong>Course / Fees</strong> assign karke account activate karega. Uske baad aap apne <strong>Mobile Number</strong> ya <strong>Roll Number</strong> aur <strong>Password</strong> se login kar sakenge.
+                  The Admin will assign your <strong>Roll Number</strong> and <strong>Course / Fees</strong> to activate your account. After activation, you can sign in using your <strong>Mobile Number</strong> or <strong>Roll Number</strong> and <strong>Password</strong>.
                 </p>
               </div>
 

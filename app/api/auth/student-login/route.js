@@ -39,7 +39,7 @@ export async function POST(request) {
             return NextResponse.json({
               success: false,
               isPending: true,
-              message: `Namaste ${mongoUser.name}! Aapka account Admin verification ke liye pending hai. Admin approval ke baad aapka Roll Number assign hoga aur login active ho jayega.`
+              message: `Hello ${mongoUser.name}! Your account is pending Admin verification. Your Roll Number and login access will be activated once approved by the office.`
             }, { status: 403 });
           }
 
@@ -69,7 +69,7 @@ export async function POST(request) {
           return NextResponse.json({
             success: false,
             isPending: true,
-            message: `Namaste ${localStudent.name}! Aapka account Admin verification ke liye pending hai. Admin approval ke baad aapka Roll Number assign hoga aur login active ho jayega.`
+            message: `Hello ${localStudent.name}! Your account is pending Admin verification. Your Roll Number and login access will be activated once approved by the office.`
           }, { status: 403 });
         }
         student = localStudent;
