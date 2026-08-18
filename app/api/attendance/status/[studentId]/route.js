@@ -6,9 +6,16 @@ import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { isWithinGeofence } from '@/lib/geo';
 import { getIndianDateTime } from '@/lib/indianTime';
+import { executeAutoPunchOut } from '@/lib/autoPunchOutService';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request, { params }) {
   try {
+    // Run background auto punch out check
+    await executeAutoPunchOut().catch(e => console.warn('Auto punch out check in status route:', e.message));
+
     const { studentId } = params;
     const { searchParams } = new URL(request.url);
     const lat = searchParams.get('lat');

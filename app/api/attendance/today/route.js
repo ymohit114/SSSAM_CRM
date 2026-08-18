@@ -4,9 +4,16 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getIndianDateTime } from '@/lib/indianTime';
+import { executeAutoPunchOut } from '@/lib/autoPunchOutService';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request) {
   try {
+    // Run background auto punch out for records past 9:00 PM or unclosed past days
+    await executeAutoPunchOut().catch(e => console.warn('Auto punch out check in today route:', e.message));
+
     const { searchParams } = new URL(request.url);
     const dateStr = searchParams.get('date') || getIndianDateTime().dateStr;
 

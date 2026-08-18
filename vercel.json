@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/attendance/auto-punchout",
+      "schedule": "30 15 * * *"
+    },
+    {
+      "path": "/api/notifications/cron-fee-reminders?type=morning",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/notifications/cron-fee-reminders?type=evening",
+      "schedule": "30 12 * * *"
+    }
+  ]
+}
