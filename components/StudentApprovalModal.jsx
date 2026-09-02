@@ -8,20 +8,21 @@ import {
 
 export default function StudentApprovalModal({
   student,
-  isOpen,
+  isOpen = true,
   onClose,
   onApproved,
+  onSuccess,
   existingCount = 0,
   approvedStudents = []
 }) {
-  if (!isOpen || !student) return null;
+  if (isOpen === false || !student) return null;
 
   // Calculate highest existing roll number
   const maxRollNum = (approvedStudents || []).reduce((max, s) => {
     const match = s.rollNo && s.rollNo.match(/SSSAM-(\d+)/i);
     return match ? Math.max(max, parseInt(match[1], 10)) : max;
   }, 100);
-  const defaultRollNo = `SSSAM-${Math.max(maxRollNum + 1, existingCount + 101)}`;
+  const defaultRollNo = `SSSAM-${Math.max(maxRollNum + 1, (existingCount || 0) + 101)}`;
 
   const [rollNo, setRollNo] = useState(
     student.rollNo && !student.rollNo.startsWith('TEMP') ? student.rollNo : defaultRollNo
@@ -95,7 +96,8 @@ export default function StudentApprovalModal({
         totalInstallments: feeType === 'installment' ? numInstallments : 1
       };
 
-      const res = await fetch(`/api/students/${student.id}/approve`, {
+      const studentId = student.id || student._id || student.rollNo || student.phone;
+      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -105,7 +107,8 @@ export default function StudentApprovalModal({
       if (!res.ok) throw new Error(data.message || 'Approval failed');
 
       if (onApproved) onApproved();
-      onClose();
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
     } catch (err) {
       setError(err.message || 'Failed to approve student.');
     } finally {
@@ -117,10 +120,15 @@ export default function StudentApprovalModal({
     if (!window.confirm(`Are you sure you want to reject and remove registration for ${student.name}?`)) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/students/${student.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to reject registration');
+      const studentId = student.id || student._id || student.rollNo || student.phone;
+      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to reject registration');
+      }
       if (onApproved) onApproved();
-      onClose();
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
     } catch (err) {
       setError(err.message || 'Failed to reject');
     } finally {

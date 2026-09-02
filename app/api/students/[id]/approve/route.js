@@ -42,12 +42,14 @@ export async function POST(request, { params }) {
       }
       if (id) {
         orConditions.push({ rollNo: id });
+        orConditions.push({ rollNo: id.toUpperCase() });
+        orConditions.push({ phone: id });
       }
       if (phone) {
         orConditions.push({ phone: phone });
       }
       if (email) {
-        orConditions.push({ email: email });
+        orConditions.push({ email: email.toLowerCase() });
       }
       if (cleanRollNo) {
         orConditions.push({ rollNo: cleanRollNo });

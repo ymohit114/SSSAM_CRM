@@ -690,11 +690,17 @@ export default function StudentManager({
       {/* Fee Management Modal */}
       {feeModalStudent && (
         <StudentFeeModal
+          key={feeModalStudent.id || feeModalStudent._id || feeModalStudent.rollNo || 'fee-modal'}
+          isOpen={true}
           student={feeModalStudent}
           onClose={() => setFeeModalStudent(null)}
           onSuccess={() => {
             setFeeModalStudent(null);
-            onRefresh();
+            if (onRefresh) onRefresh();
+          }}
+          onUpdated={() => {
+            setFeeModalStudent(null);
+            if (onRefresh) onRefresh();
           }}
         />
       )}
@@ -702,11 +708,19 @@ export default function StudentManager({
       {/* Student Approval Modal */}
       {approvalModalStudent && (
         <StudentApprovalModal
+          key={approvalModalStudent.id || approvalModalStudent._id || approvalModalStudent.rollNo || 'approval-modal'}
+          isOpen={true}
           student={approvalModalStudent}
+          approvedStudents={approvedStudents}
+          existingCount={approvedStudents.length}
           onClose={() => setApprovalModalStudent(null)}
           onSuccess={() => {
             setApprovalModalStudent(null);
-            onRefresh();
+            if (onRefresh) onRefresh();
+          }}
+          onApproved={() => {
+            setApprovalModalStudent(null);
+            if (onRefresh) onRefresh();
           }}
         />
       )}

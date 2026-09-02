@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { calculateStudentFee } from '@/lib/feeHelper';
 
-export default function StudentFeeModal({ student, isOpen, onClose, onUpdated }) {
-  if (!isOpen || !student) return null;
+export default function StudentFeeModal({ student, isOpen = true, onClose, onUpdated, onSuccess }) {
+  if (isOpen === false || !student) return null;
 
   const currentFee = calculateStudentFee(student);
 
@@ -21,6 +21,11 @@ export default function StudentFeeModal({ student, isOpen, onClose, onUpdated })
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const triggerSuccess = () => {
+    if (onUpdated) onUpdated();
+    if (onSuccess) onSuccess();
+  };
+
   // 1. Save Course & Fee details
   const handleSaveDetails = async (e) => {
     e.preventDefault();
@@ -29,7 +34,8 @@ export default function StudentFeeModal({ student, isOpen, onClose, onUpdated })
     setSuccessMsg('');
 
     try {
-      const res = await fetch(`/api/students/${student.id || student.rollNo}/fee`, {
+      const studentId = student.id || student._id || student.rollNo || student.phone;
+      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/fee`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,7 +48,7 @@ export default function StudentFeeModal({ student, isOpen, onClose, onUpdated })
       if (!res.ok) throw new Error(data.message || 'Failed to update fee details');
 
       setSuccessMsg('Student course and fee details updated successfully!');
-      if (onUpdated) onUpdated();
+      triggerSuccess();
     } catch (err) {
       setError(err.message || 'Failed to save');
     } finally {
@@ -57,7 +63,8 @@ export default function StudentFeeModal({ student, isOpen, onClose, onUpdated })
     setSuccessMsg('');
 
     try {
-      const res = await fetch(`/api/students/${student.id || student.rollNo}/fee`, {
+      const studentId = student.id || student._id || student.rollNo || student.phone;
+      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/fee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, amount })
@@ -66,7 +73,7 @@ export default function StudentFeeModal({ student, isOpen, onClose, onUpdated })
       if (!res.ok) throw new Error(data.message || 'Failed to settle fee');
 
       setSuccessMsg(data.message || 'Fee settlement recorded!');
-      if (onUpdated) onUpdated();
+      triggerSuccess();
     } catch (err) {
       setError(err.message || 'Settlement failed');
     } finally {
