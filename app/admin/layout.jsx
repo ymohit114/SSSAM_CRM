@@ -14,7 +14,8 @@ export default function AdminLayout({ children }) {
   const [adminUser, setAdminUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   // Form states for inline admin login fallback
   const [email, setEmail] = useState('admin@mohit.com');
@@ -39,9 +40,19 @@ export default function AdminLayout({ children }) {
     }
   }, []);
 
-  // Live Clock
+  // Live Clock (Client-side only to prevent React Hydration mismatch)
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    setMounted(true);
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }));
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -354,7 +365,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-3 text-xs">
             <div className="bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2 font-mono text-white">
               <Clock className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{currentTime.toLocaleTimeString()}</span>
+              <span suppressHydrationWarning>{mounted && currentTime ? currentTime : '--:--:--'}</span>
             </div>
           </div>
         </header>

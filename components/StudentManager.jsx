@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import {
   Users, UserPlus, Search, Edit2, Trash2,
   Phone, Mail, X, CheckCircle2, Shield, IndianRupee, BookOpen, Calendar,
-  AlertTriangle, Clock, UserCheck, Bell, ShieldAlert
+  AlertTriangle, Clock, UserCheck, Bell, ShieldAlert, MessageCircle, ArrowUpRight, DollarSign, Filter
 } from 'lucide-react';
 import StudentFeeModal from './StudentFeeModal';
 import StudentApprovalModal from './StudentApprovalModal';
@@ -14,7 +14,7 @@ export default function StudentManager({
   students = [],
   onRefresh
 }) {
-  const [activeTab, setActiveTab] = useState('enrolled'); // 'enrolled' | 'pending'
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'pending_fee' | 'overdue_fee' | 'cleared_fee' | 'pending_approval'
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -35,11 +35,30 @@ export default function StudentManager({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Partition students into Approved vs Pending
+  // Partition students
   const approvedStudents = students.filter(s => s.status === 'approved' || (s.isApproved && s.status !== 'pending'));
-  const pendingStudents = students.filter(s => s.status === 'pending' || (!s.isApproved && s.status !== 'approved'));
+  const pendingApprovals = students.filter(s => s.status === 'pending' || (!s.isApproved && s.status !== 'approved'));
 
-  const currentList = activeTab === 'enrolled' ? approvedStudents : pendingStudents;
+  // Calculate Fee Categories
+  const studentsWithFees = approvedStudents.map(s => ({
+    ...s,
+    fee: calculateStudentFee(s)
+  }));
+
+  const pendingFeeStudents = studentsWithFees.filter(s => s.fee.baseRemainingFee > 0);
+  const overdueFeeStudents = studentsWithFees.filter(s => s.fee.daysOverdue > 0 && s.fee.baseRemainingFee > 0);
+  const clearedFeeStudents = studentsWithFees.filter(s => s.fee.baseRemainingFee <= 0);
+
+  const totalPendingAmount = pendingFeeStudents.reduce((acc, s) => acc + s.fee.totalRemainingPayable, 0);
+  const totalOverdueAmount = overdueFeeStudents.reduce((acc, s) => acc + s.fee.totalRemainingPayable, 0);
+
+  // Determine current list based on filter
+  let currentList = [];
+  if (filterTab === 'all') currentList = approvedStudents;
+  else if (filterTab === 'pending_fee') currentList = pendingFeeStudents;
+  else if (filterTab === 'overdue_fee') currentList = overdueFeeStudents;
+  else if (filterTab === 'cleared_fee') currentList = clearedFeeStudents;
+  else if (filterTab === 'pending_approval') currentList = pendingApprovals;
 
   const filteredStudents = currentList.filter(s => {
     return (
@@ -131,7 +150,7 @@ export default function StudentManager({
   return (
     <div className="space-y-6">
       
-      {/* Header & Actions */}
+      {/* Header & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
@@ -139,7 +158,7 @@ export default function StudentManager({
             <span>Student & Fee Directory</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Total {approvedStudents.length} Enrolled Students &bull; {pendingStudents.length} Pending Approval
+            Total {approvedStudents.length} Enrolled Students &bull; {pendingFeeStudents.length} Students with Pending Fees
           </p>
         </div>
 
@@ -154,31 +173,156 @@ export default function StudentManager({
         </div>
       </div>
 
-      {/* TABS: Enrolled Students vs Pending Approvals */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold">
+      {/* TOP KPI CARDS (Clickable Filters) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        
+        {/* All Students */}
         <button
-          onClick={() => setActiveTab('enrolled')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'enrolled'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+          type="button"
+          onClick={() => setFilterTab('all')}
+          className={`p-4 rounded-2xl border text-left transition-all ${
+            filterTab === 'all'
+              ? 'bg-blue-950/60 border-blue-500 shadow-lg shadow-blue-500/10'
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] uppercase font-bold tracking-wider">All Students</span>
+            <Users className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white font-mono mt-1">
+            {approvedStudents.length}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Enrolled batch</div>
+        </button>
+
+        {/* Pending Fee Filter Card (User's Main Request!) */}
+        <button
+          type="button"
+          onClick={() => setFilterTab('pending_fee')}
+          className={`p-4 rounded-2xl border text-left transition-all ${
+            filterTab === 'pending_fee'
+              ? 'bg-amber-950/70 border-amber-500 shadow-lg shadow-amber-500/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-amber-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-400">
+            <span className="text-[10px] uppercase font-bold tracking-wider">Pending Fees</span>
+            <IndianRupee className="w-4 h-4" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-amber-300 font-mono mt-1">
+            ₹{totalPendingAmount.toLocaleString('en-IN')}
+          </div>
+          <div className="text-[10px] text-amber-400/90 mt-0.5 font-bold">
+            {pendingFeeStudents.length} Students Pending
+          </div>
+        </button>
+
+        {/* Overdue Fees */}
+        <button
+          type="button"
+          onClick={() => setFilterTab('overdue_fee')}
+          className={`p-4 rounded-2xl border text-left transition-all ${
+            filterTab === 'overdue_fee'
+              ? 'bg-rose-950/70 border-rose-500 shadow-lg shadow-rose-500/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-rose-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between text-rose-400">
+            <span className="text-[10px] uppercase font-bold tracking-wider">Overdue Dues</span>
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-rose-300 font-mono mt-1">
+            ₹{totalOverdueAmount.toLocaleString('en-IN')}
+          </div>
+          <div className="text-[10px] text-rose-400/90 mt-0.5 font-bold">
+            {overdueFeeStudents.length} Students Overdue
+          </div>
+        </button>
+
+        {/* Fees Cleared */}
+        <button
+          type="button"
+          onClick={() => setFilterTab('cleared_fee')}
+          className={`p-4 rounded-2xl border text-left transition-all ${
+            filterTab === 'cleared_fee'
+              ? 'bg-emerald-950/70 border-emerald-500 shadow-lg shadow-emerald-500/20'
+              : 'bg-slate-900/80 border-slate-800 hover:border-emerald-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between text-emerald-400">
+            <span className="text-[10px] uppercase font-bold tracking-wider">All Cleared</span>
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-emerald-300 font-mono mt-1">
+            {clearedFeeStudents.length}
+          </div>
+          <div className="text-[10px] text-emerald-400/90 mt-0.5">₹0 Balance Due</div>
+        </button>
+
+      </div>
+
+      {/* FILTER BUTTONS ROW */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
+        <button
+          onClick={() => setFilterTab('all')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+            filterTab === 'all'
+              ? 'bg-blue-600 text-white shadow-md'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Active Students ({approvedStudents.length})</span>
+          <Users className="w-3.5 h-3.5" />
+          <span>All Enrolled ({approvedStudents.length})</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('pending')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative ${
-            activeTab === 'pending'
-              ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          onClick={() => setFilterTab('pending_fee')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+            filterTab === 'pending_fee'
+              ? 'bg-amber-600 text-white shadow-md'
+              : 'bg-slate-900 text-amber-400/80 hover:text-amber-300 border border-slate-800'
           }`}
         >
-          <Clock className="w-4 h-4 text-amber-400" />
-          <span>Pending Approvals ({pendingStudents.length})</span>
-          {pendingStudents.length > 0 && (
+          <IndianRupee className="w-3.5 h-3.5" />
+          <span>Pending Fees ({pendingFeeStudents.length})</span>
+        </button>
+
+        <button
+          onClick={() => setFilterTab('overdue_fee')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+            filterTab === 'overdue_fee'
+              ? 'bg-rose-600 text-white shadow-md'
+              : 'bg-slate-900 text-rose-400/80 hover:text-rose-300 border border-slate-800'
+          }`}
+        >
+          <AlertTriangle className="w-3.5 h-3.5" />
+          <span>Overdue Fees ({overdueFeeStudents.length})</span>
+        </button>
+
+        <button
+          onClick={() => setFilterTab('cleared_fee')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+            filterTab === 'cleared_fee'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'bg-slate-900 text-emerald-400/80 hover:text-emerald-300 border border-slate-800'
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Fees Cleared ({clearedFeeStudents.length})</span>
+        </button>
+
+        <button
+          onClick={() => setFilterTab('pending_approval')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap relative ${
+            filterTab === 'pending_approval'
+              ? 'bg-purple-600 text-white shadow-md'
+              : 'bg-slate-900 text-purple-400/80 hover:text-purple-300 border border-slate-800'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Approvals ({pendingApprovals.length})</span>
+          {pendingApprovals.length > 0 && (
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
           )}
         </button>
@@ -192,7 +336,7 @@ export default function StudentManager({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search ${activeTab === 'enrolled' ? 'active students' : 'pending registrations'} by name, mobile, roll no...`}
+            placeholder={`Search ${filterTab.replace('_', ' ')} students by name, mobile, course, roll no...`}
             className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
           />
         </div>
@@ -202,9 +346,15 @@ export default function StudentManager({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredStudents.length === 0 ? (
           <div className="col-span-full bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-500 text-xs">
-            {activeTab === 'enrolled'
-              ? 'No active students enrolled yet. Click "Add Enrolled Student" or approve registrations.'
-              : 'No pending registrations awaiting approval.'}
+            {filterTab === 'pending_fee'
+              ? '🎉 Great! No students currently have pending fees.'
+              : filterTab === 'overdue_fee'
+              ? '✅ No overdue fee accounts at this time.'
+              : filterTab === 'cleared_fee'
+              ? 'No fee-cleared accounts found.'
+              : filterTab === 'pending_approval'
+              ? 'No pending registrations awaiting approval.'
+              : 'No students match the search filter.'}
           </div>
         ) : (
           filteredStudents.map((s) => {
@@ -213,12 +363,27 @@ export default function StudentManager({
             const isPaid = fee.baseRemainingFee <= 0;
             const isPending = s.status === 'pending' || !s.isApproved;
 
+            const cleanPhone = (s.phone || '').replace(/[^0-9]/g, '');
+            const dueDateFormatted = s.dueDate
+              ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+              : 'Immediate';
+
+            const rawWhatsAppText = isOverdue
+              ? `Hello ${s.name},\n\n⚠️ *URGENT OVERDUE NOTICE - SSSAM ACADEMY*\n\nThis is to notify you that your fee installment for *${s.course || 'your course'}* is *${fee.daysOverdue} days overdue* (Scheduled Due Date: ${dueDateFormatted}).\n\n📊 *Fee & Fine Breakdown:*\n• Base Pending Fee: ₹${fee.baseRemainingFee}\n• Accrued Late Fine: +₹${fee.lateFine} (Policy: ₹150 for every 2 days overdue)\n• *Net Total Payable: ₹${fee.totalRemainingPayable}*\n\nPlease clear your overdue dues at the institute office or online immediately to avoid further fine.\n\nThank you,\n*SSSAM Academy Administration*\n📍 Ground Floor, M-24, Old DLF Colony, Sector 14, Gurugram`
+              : `Hello ${s.name},\n\n🔔 *FEE PAYMENT REMINDER - SSSAM ACADEMY*\n\nThis is a friendly reminder regarding your pending fee installment of *₹${fee.baseRemainingFee}* for *${s.course || 'your course'}*.\n\n📅 *Scheduled Due Date:* ${dueDateFormatted}\n💰 *Payable Amount:* ₹${fee.totalRemainingPayable}\n\n📌 *Note on Fine Policy:* SSSAM Academy applies a late fine of *₹150 for every 2 days past the due date*. Kindly submit on or before ${dueDateFormatted} to avoid late charges.\n\nThank you,\n*SSSAM Academy Administration*\n📍 Ground Floor, M-24, Old DLF Colony, Sector 14, Gurugram`;
+
+            const whatsappMsg = encodeURIComponent(rawWhatsAppText);
+
             return (
               <div
                 key={s.id || s.rollNo || s.phone}
                 className={`border rounded-3xl p-5 space-y-4 transition-all shadow-lg hover:shadow-xl relative overflow-hidden flex flex-col justify-between ${
                   isPending
                     ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400'
+                    : isOverdue
+                    ? 'bg-rose-950/20 border-rose-500/50 hover:border-rose-400'
+                    : isPaid
+                    ? 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/40'
                     : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
                 }`}
               >
@@ -229,6 +394,8 @@ export default function StudentManager({
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-md ${
                         isPending
                           ? 'bg-gradient-to-tr from-amber-600 to-orange-600 shadow-amber-600/20'
+                          : isOverdue
+                          ? 'bg-gradient-to-tr from-rose-600 to-red-600 shadow-rose-600/20'
                           : 'bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-blue-600/20'
                       }`}>
                         {s.name ? s.name.charAt(0) : '?'}
@@ -238,119 +405,150 @@ export default function StudentManager({
                           {s.name}
                         </h3>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          {isPending ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
-                              <Clock className="w-3 h-3" />
-                              <span>Self-Registered</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 font-mono font-bold text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                              {s.rollNo}
-                            </span>
-                          )}
+                          <span className="text-[11px] font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                            {s.rollNo}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            &bull; {s.gender || 'Student'}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      {!isPending && (
-                        <button
-                          onClick={() => handleOpenEdit(s)}
-                          className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"
-                          title="Edit Student Profile"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                    {/* Status Badge */}
+                    <div>
+                      {isPending ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <Clock className="w-3 h-3" />
+                          <span>Pending</span>
+                        </span>
+                      ) : isPaid ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Cleared</span>
+                        </span>
+                      ) : isOverdue ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>{fee.daysOverdue}d Overdue</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <IndianRupee className="w-3 h-3" />
+                          <span>Due Pending</span>
+                        </span>
                       )}
-                      <button
-                        onClick={() => handleDeleteStudent(s.id, s.name)}
-                        className="p-1.5 rounded-xl bg-rose-950/50 hover:bg-rose-950 text-rose-400 border border-rose-500/30 transition-all"
-                        title={isPending ? 'Reject Registration' : 'Delete Student'}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div className="space-y-1 text-xs text-slate-400 border-t border-slate-800/80 pt-2.5">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-slate-500" />
-                      <span className="font-mono text-slate-200">{s.phone}</span>
+                  {/* Course & Contact Info */}
+                  <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs text-slate-300">
+                    <div className="flex items-center gap-2 font-semibold text-white">
+                      <BookOpen className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                      <span className="line-clamp-1">{s.course || 'No Course Assigned'}</span>
                     </div>
-                    {s.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5 text-slate-500" />
-                        <span className="truncate">{s.email}</span>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-slate-500" />
+                        <span className="font-mono">{s.phone || 'N/A'}</span>
                       </div>
-                    )}
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 text-slate-500" />
+                        <span className="truncate max-w-[110px]">{s.email || 'N/A'}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Course & Fee Info for Approved Students */}
+                  {/* Fee Summary Box */}
                   {!isPending && (
-                    <>
-                      <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs">
-                        <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                          <BookOpen className="w-3 h-3 text-indigo-400" />
-                          <span>Course:</span>
-                        </div>
-                        <div className="font-bold text-white mt-0.5 truncate">
-                          {s.course || 'Full Stack Web Development'}
-                        </div>
+                    <div className={`p-3 rounded-2xl border space-y-1 ${
+                      isOverdue
+                        ? 'bg-rose-950/40 border-rose-500/40'
+                        : isPaid
+                        ? 'bg-emerald-950/20 border-emerald-500/30'
+                        : 'bg-slate-800/80 border-slate-700/80'
+                    }`}>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400 font-medium">Remaining Due</span>
+                        <span className="text-slate-400 font-mono text-[10px]">
+                          Due: {s.dueDate ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A'}
+                        </span>
                       </div>
 
-                      <div className={`p-3 rounded-2xl border text-xs space-y-1.5 ${
-                        isPaid
-                          ? 'bg-emerald-950/30 border-emerald-500/30'
-                          : isOverdue
-                          ? 'bg-rose-950/30 border-rose-500/40'
-                          : 'bg-slate-950/60 border-slate-800'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-slate-400 font-semibold">
-                            {s.feeType === 'installment' ? `Installment ${s.currentInstallment || 1}/${s.totalInstallments || 1}` : 'Remaining Fee'}
-                          </span>
-                          <span className="font-black font-mono text-sm text-white">
-                            ₹{fee.totalRemainingPayable.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400">Due Date:</span>
-                          <span className="font-mono text-slate-300">
-                            {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A'}
-                          </span>
+                      <div className="flex items-baseline justify-between">
+                        <div className={`text-lg font-black font-mono ${
+                          isPaid ? 'text-emerald-400' : isOverdue ? 'text-rose-400' : 'text-amber-300'
+                        }`}>
+                          ₹{fee.totalRemainingPayable.toLocaleString('en-IN')}
                         </div>
 
                         {fee.lateFine > 0 && (
-                          <div className="text-[10px] font-bold text-rose-400 flex items-center justify-between pt-1 border-t border-rose-500/20">
-                            <span>Late Fine ({fee.daysOverdue}d late):</span>
-                            <span className="font-mono">+₹{fee.lateFine}</span>
-                          </div>
+                          <span className="text-[10px] font-mono text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30">
+                            +₹{fee.lateFine} Fine
+                          </span>
                         )}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
 
-                {/* Bottom Action Button */}
-                <div className="pt-3 border-t border-slate-800/80">
+                {/* Bottom Actions */}
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
                   {isPending ? (
                     <button
                       onClick={() => setApprovalModalStudent(s)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                      className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all"
                     >
-                      <UserCheck className="w-4 h-4" />
-                      <span>Review & Approve Registration</span>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Review & Approve</span>
                     </button>
                   ) : (
-                    <button
-                      onClick={() => setFeeModalStudent(s)}
-                      className="w-full py-2 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <IndianRupee className="w-3.5 h-3.5" />
-                      <span>Manage / Settle Fee</span>
-                    </button>
+                    <>
+                      {/* Manage Fee Button */}
+                      <button
+                        onClick={() => setFeeModalStudent(s)}
+                        className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                          !isPaid
+                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        <IndianRupee className="w-3.5 h-3.5" />
+                        <span>{isPaid ? 'Fee Details' : 'Collect Fee'}</span>
+                      </button>
+
+                      {/* WhatsApp Reminder (If fee is pending) */}
+                      {!isPaid && cleanPhone && (
+                        <a
+                          href={`https://wa.me/91${cleanPhone}?text=${whatsappMsg}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Send WhatsApp Fee Reminder"
+                          className="p-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 transition-all flex items-center justify-center"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </a>
+                      )}
+
+                      {/* Edit Profile */}
+                      <button
+                        onClick={() => handleOpenEdit(s)}
+                        title="Edit Student Info"
+                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteStudent(s.id, s.name)}
+                        title="Delete Student"
+                        className="p-2 rounded-xl bg-rose-950/50 hover:bg-rose-950 text-rose-300 border border-rose-500/30 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -360,159 +558,153 @@ export default function StudentManager({
         )}
       </div>
 
-      {/* Add / Edit Student Profile Modal */}
+      {/* Add / Edit Student Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
-            
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-black text-white">
-                {editingStudent ? 'Edit Student Details' : 'Register New Student'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <span>{editingStudent ? 'Edit Student Details' : 'Add New Enrolled Student'}</span>
               </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Manage student roll number, enrolled course, and fee terms.
+              </p>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/40 text-xs text-rose-300">
+              <div className="p-3 bg-rose-950/60 border border-rose-500/40 rounded-xl text-xs text-rose-200">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSaveStudent} className="space-y-3 text-xs">
-              
-              <div className="space-y-1">
-                <label className="font-bold text-slate-300">Roll Number *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.rollNo}
-                  onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                  placeholder="e.g. SSSAM-107"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono uppercase focus:outline-none focus:border-blue-500"
-                />
+            <form onSubmit={handleSaveStudent} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">Roll Number *</label>
+                  <input
+                    type="text"
+                    value={formData.rollNo}
+                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
+                    required
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">Full Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">Mobile Number</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">Email Address</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-300">Full Name *</label>
+                <label className="text-xs font-semibold text-slate-300">Enrolled Course</label>
                 <input
                   type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Mohit Kumar"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-300">Course Enrolled *</label>
-                <input
-                  type="text"
-                  required
                   value={formData.course}
                   onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  placeholder="e.g. Full Stack Web Development"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. Data Science & AI, DCA, Python"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-300">Remaining Fee (₹)</label>
+                  <label className="text-xs font-semibold text-slate-300">Remaining Fee (₹)</label>
                   <input
                     type="number"
                     value={formData.remainingFee}
-                    onChange={(e) => setFormData({ ...formData, remainingFee: e.target.value })}
-                    placeholder="5000"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                    onChange={(e) => setFormData({ ...formData, remainingFee: Number(e.target.value) })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-300">Due Date</label>
+                  <label className="text-xs font-semibold text-slate-300">Due Date</label>
                   <input
                     type="date"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-300">Mobile Phone</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91 98765..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-300">Password</label>
-                  <input
-                    type="text"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="123456"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2.5 pt-3">
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700"
+                  className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30"
                 >
-                  {loading ? 'Saving...' : 'Save Student'}
+                  {loading ? 'Saving...' : editingStudent ? 'Update Student' : 'Add Student'}
                 </button>
               </div>
-
             </form>
 
           </div>
         </div>
       )}
 
-      {/* Admin Fee & Settlement Modal */}
+      {/* Fee Management Modal */}
       {feeModalStudent && (
         <StudentFeeModal
           student={feeModalStudent}
-          isOpen={Boolean(feeModalStudent)}
           onClose={() => setFeeModalStudent(null)}
-          onUpdated={() => {
+          onSuccess={() => {
             setFeeModalStudent(null);
             onRefresh();
           }}
         />
       )}
 
-      {/* Admin Approval & Installment Modal */}
+      {/* Student Approval Modal */}
       {approvalModalStudent && (
         <StudentApprovalModal
           student={approvalModalStudent}
-          isOpen={Boolean(approvalModalStudent)}
-          existingCount={approvedStudents.length}
-          approvedStudents={approvedStudents}
           onClose={() => setApprovalModalStudent(null)}
-          onApproved={() => {
+          onSuccess={() => {
             setApprovalModalStudent(null);
             onRefresh();
           }}

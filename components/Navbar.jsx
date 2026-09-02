@@ -13,26 +13,31 @@ export default function Navbar({
   isInside = false,
   onAdminClick
 }) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
+  const [formattedTime, setFormattedTime] = useState('');
+  const [formattedDate, setFormattedDate] = useState('');
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    setMounted(true);
+    const updateTime = () => {
+      const now = new Date();
+      setFormattedTime(now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }));
+      setFormattedDate(now.toLocaleDateString('en-US', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }));
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  const formattedTime = currentTime.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
-
-  const formattedDate = currentTime.toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm text-slate-900">
@@ -67,9 +72,13 @@ export default function Navbar({
             {/* Clock */}
             <div className="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-inner">
               <Clock className="w-4 h-4 text-slate-600" />
-              <div className="text-right">
-                <div className="text-xs font-mono font-bold text-slate-900 tracking-wider">{formattedTime}</div>
-                <div className="text-[10px] text-slate-500 font-medium">{formattedDate}</div>
+              <div className="text-right" suppressHydrationWarning>
+                <div className="text-xs font-mono font-bold text-slate-900 tracking-wider">
+                  {mounted && formattedTime ? formattedTime : '--:--:--'}
+                </div>
+                <div className="text-[10px] text-slate-500 font-medium">
+                  {mounted && formattedDate ? formattedDate : ''}
+                </div>
               </div>
             </div>
 

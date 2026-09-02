@@ -1,11 +1,19 @@
 import './globals.css';
+import PwaRegister from '@/components/PwaRegister';
 
 export const metadata = {
   title: 'SSSAM Academy - Geofenced Attendance Portal',
   description: 'Smart GPS Geofenced Attendance Management System for SSSAM Academy',
+  manifest: '/manifest.json',
   icons: {
     icon: '/logo.svg',
+    apple: '/logo.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SSSAM Portal'
+  }
 };
 
 export const viewport = {
@@ -19,6 +27,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="SSSAM Portal" />
         <link
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -33,6 +45,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen">
+        <PwaRegister />
         {children}
       </body>
     </html>

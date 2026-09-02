@@ -67,22 +67,49 @@
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
 }
 
-/* Print Rules */
+/* Print Rules for Clean Excel-Style Reports */
 @media print {
   body {
-    background: white !important;
-    color: black !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .no-print {
+  .no-print, nav, aside, footer, header, .print-hide {
     display: none !important;
   }
   .print-only {
     display: block !important;
   }
-  .glass-panel, .glass-panel-glow {
-    background: white !important;
-    border: 1px solid #ccc !important;
-    color: black !important;
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
     box-shadow: none !important;
+    border: none !important;
+  }
+  table.excel-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  table.excel-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  table.excel-table th, table.excel-table td {
+    border: 1px solid #0f172a !important;
+    padding: 6px 8px !important;
+    color: #000000 !important;
+    font-size: 8.5pt !important;
+  }
+  table.excel-table th {
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
   }
 }
