@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, UserCheck, Clock, AlertTriangle, UserX,
-  Search, PlusCircle, RefreshCw, Eye, MapPin, ShieldCheck, LogOut, CheckCircle2
+  Search, PlusCircle, RefreshCw, Eye, MapPin, ShieldCheck, LogOut, CheckCircle2, Trash2
 } from 'lucide-react';
 import ManualAttendanceModal from './ManualAttendanceModal';
 import AdminPunchOutModal from './AdminPunchOutModal';
@@ -20,6 +20,7 @@ export default function AdminDashboard({
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedPunchOut, setSelectedPunchOut] = useState(null);
   const [viewPhotoUrl, setViewPhotoUrl] = useState(null);
+  const [deletingStudentId, setDeletingStudentId] = useState(null);
 
   const loadTodayAttendance = async () => {
     try {
@@ -33,6 +34,30 @@ export default function AdminDashboard({
       console.error('Error loading today attendance:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTodayAttendance = async (studentName, studentId, attendanceId) => {
+    if (!window.confirm(`Are you sure you want to delete today's attendance record for "${studentName}"?`)) {
+      return;
+    }
+
+    try {
+      setDeletingStudentId(studentId);
+      const todayStr = new Date().toISOString().split('T')[0];
+      const deleteUrl = attendanceId
+        ? `/api/attendance/history?id=${encodeURIComponent(attendanceId)}`
+        : `/api/attendance/history?date=${todayStr}&studentId=${encodeURIComponent(studentId)}`;
+
+      const res = await fetch(deleteUrl, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete today's attendance");
+
+      await loadTodayAttendance();
+    } catch (err) {
+      alert(err.message || 'Error deleting attendance');
+    } finally {
+      setDeletingStudentId(null);
     }
   };
 
@@ -238,30 +263,44 @@ export default function AdminDashboard({
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        {isPunchedIn ? (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPunchOut({ student, attendance })}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all active:scale-95 hover:scale-105"
-                            title={`Punch Out ${student.name}`}
-                          >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>⚡ Punch Out</span>
-                          </button>
-                        ) : attendance.punchOutTime ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Completed</span>
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowManualModal(true)}
-                            className="text-slate-500 hover:text-slate-300 text-[11px] underline"
-                          >
-                            Manual Entry
-                          </button>
-                        )}
+                        <div className="flex items-center justify-center gap-1.5">
+                          {isPunchedIn ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPunchOut({ student, attendance })}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all active:scale-95 hover:scale-105"
+                              title={`Punch Out ${student.name}`}
+                            >
+                              <LogOut className="w-3.5 h-3.5" />
+                              <span>⚡ Punch Out</span>
+                            </button>
+                          ) : attendance.punchOutTime ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Completed</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setShowManualModal(true)}
+                              className="text-slate-500 hover:text-slate-300 text-[11px] underline"
+                            >
+                              Manual Entry
+                            </button>
+                          )}
+
+                          {attendance.punchInTime && (
+                            <button
+                              type="button"
+                              disabled={deletingStudentId === student.id}
+                              onClick={() => handleDeleteTodayAttendance(student.name, student.id, attendance.id || attendance._id)}
+                              title={`Delete today's punch for ${student.name}`}
+                              className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 text-rose-300 hover:text-white transition-all disabled:opacity-50"
+                            >
+                              <Trash2 className={`w-3.5 h-3.5 ${deletingStudentId === student.id ? 'animate-pulse text-rose-400' : ''}`} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

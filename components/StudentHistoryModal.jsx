@@ -3,36 +3,61 @@
 import React, { useState, useEffect } from 'react';
 import {
   Calendar, CheckCircle2, Clock, BookOpen, AlertTriangle,
-  Award, X, MapPin
+  Award, X, MapPin, Trash2
 } from 'lucide-react';
 import { formatISTTime } from '@/lib/indianTime';
 
 export default function StudentHistoryModal({ student, onClose }) {
   const [history, setHistory] = useState({ logs: [], stats: {} });
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
-  useEffect(() => {
+  const fetchHistory = async () => {
     if (!student) return;
     const identifier = student.id || student._id || student.rollNo;
     if (!identifier) return;
     
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/auth/student-history/${encodeURIComponent(identifier)}`);
-        const data = await res.json();
-        if (data.success) {
-          setHistory(data);
-        }
-      } catch (err) {
-        console.error('Error fetching student history:', err);
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/auth/student-history/${encodeURIComponent(identifier)}`);
+      const data = await res.json();
+      if (data.success) {
+        setHistory(data);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching student history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchHistory();
   }, [student]);
+
+  const handleDeleteLog = async (logId, date) => {
+    if (!window.confirm(`Are you sure you want to delete this attendance log for ${date}?`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(logId);
+      const res = await fetch(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete attendance log');
+
+      setHistory(prev => ({
+        ...prev,
+        logs: (prev.logs || []).filter(l => (l.id || l._id) !== logId)
+      }));
+    } catch (err) {
+      alert(err.message || 'Error deleting attendance log');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const { logs = [], stats = {} } = history;
 
@@ -110,8 +135,19 @@ export default function StudentHistoryModal({ student, onClose }) {
                     </span>
                   </div>
 
-                  <div className="text-xs font-mono text-slate-700">
-                    Duration: <strong className="text-slate-900">{Math.floor((log.durationMinutes || 0) / 60)}h {(log.durationMinutes || 0) % 60}m</strong>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs font-mono text-slate-700">
+                      Duration: <strong className="text-slate-900">{Math.floor((log.durationMinutes || 0) / 60)}h {(log.durationMinutes || 0) % 60}m</strong>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={deletingId === (log.id || log._id)}
+                      onClick={() => handleDeleteLog(log.id || log._id, log.date)}
+                      title={`Delete attendance log for ${log.date}`}
+                      className="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 

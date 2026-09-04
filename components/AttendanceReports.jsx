@@ -5,7 +5,7 @@ import {
   FileSpreadsheet, Download, Printer, Filter, Calendar,
   Search, Users, Clock, MapPin, CheckCircle2, IndianRupee,
   AlertTriangle, ArrowUpRight, MessageCircle, BookOpen, Layers,
-  RotateCcw, Eye, X
+  RotateCcw, Eye, X, Trash2
 } from 'lucide-react';
 import { formatISTTime, getIndianDateTime } from '@/lib/indianTime';
 import { calculateStudentFee } from '@/lib/feeHelper';
@@ -32,6 +32,7 @@ export default function AttendanceReports({
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] = useState('all');
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Fee Filter States
   const [feeCategoryFilter, setFeeCategoryFilter] = useState('all_pending'); // 'all_pending' | 'overdue' | 'within_5_days' | 'within_10_days' | 'custom_dates' | 'cleared' | 'all'
@@ -65,6 +66,56 @@ export default function AttendanceReports({
       }
     } catch (err) {
       console.error('Error fetching reports:', err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleDeleteLog = async (logId, studentName, date) => {
+    if (!window.confirm(`Are you sure you want to delete the attendance log for "${studentName}" on ${date}?`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(logId);
+      const res = await fetch(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete attendance log');
+
+      setLogs(prev => prev.filter(l => (l.id || l._id) !== logId));
+    } catch (err) {
+      alert(err.message || 'Error deleting attendance log');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleClearFilteredLogs = async () => {
+    if (logs.length === 0) return;
+    if (!window.confirm(`⚠️ WARNING: Are you sure you want to delete all ${logs.length} filtered attendance records? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoadingLogs(true);
+      const query = new URLSearchParams({
+        startDate,
+        endDate,
+        ...(selectedAttendanceStudent ? { studentId: selectedAttendanceStudent } : {})
+      }).toString();
+
+      const res = await fetch(`/api/attendance/history?${query}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to clear attendance logs');
+
+      setLogs([]);
+      alert(`Successfully deleted ${data.deletedCount || logs.length} attendance records.`);
+    } catch (err) {
+      alert(err.message || 'Error deleting attendance logs');
     } finally {
       setLoadingLogs(false);
     }
@@ -932,11 +983,24 @@ export default function AttendanceReports({
 
           {/* Attendance Table */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <div>
-                Found <span className="font-bold text-white">{logs.length}</span> Records
+            <div className="p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+              <div className="flex items-center gap-2">
+                <span>Found <strong className="text-white">{logs.length}</strong> Records</span>
+                {loadingLogs && <span className="text-blue-400 font-semibold animate-pulse ml-2">Loading records...</span>}
               </div>
-              {loadingLogs && <span className="text-blue-400 font-semibold animate-pulse">Loading records...</span>}
+
+              {logs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearFilteredLogs}
+                  disabled={loadingLogs}
+                  className="px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                  title="Delete all attendance logs matching current filter"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Clear Filtered ({logs.length})</span>
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -951,62 +1015,78 @@ export default function AttendanceReports({
                     <th className="py-3 px-4">Daily Study Log 📚</th>
                     <th className="py-3 px-4">GPS Dist.</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 text-slate-300">
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-slate-500">
+                      <td colSpan={9} className="text-center py-12 text-slate-500">
                         No attendance records found for the selected criteria.
                       </td>
                     </tr>
                   ) : (
-                    logs.map((l) => (
-                      <tr key={l.id || `${l.date}-${l.rollNo}`} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-4 font-mono font-medium text-slate-200">
-                          {l.date}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-white">{l.studentName}</div>
-                          <div className="text-[10px] font-mono text-blue-400">{l.rollNo}</div>
-                        </td>
-                        <td className="py-3 px-4 font-mono text-emerald-400">
-                          {l.punchInTime ? formatISTTime(l.punchInTime) : '-'}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-amber-400">
-                          {l.punchOutTime ? formatISTTime(l.punchOutTime) : '-'}
-                        </td>
-                        <td className="py-3 px-4 font-mono">
-                          {l.durationMinutes ? `${Math.floor(l.durationMinutes / 60)}h ${l.durationMinutes % 60}m` : '-'}
-                        </td>
-                        <td className="py-3 px-4 max-w-xs">
-                          {l.studySummary ? (
-                            <div className="text-xs text-slate-200 bg-slate-800 p-2 rounded-xl border border-slate-700/60 line-clamp-2">
-                              📖 {l.studySummary}
-                            </div>
-                          ) : (
-                            <span className="text-slate-500 italic text-[11px]">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-400">
-                          {l.punchInDistance != null ? (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-blue-400" />
-                              <span>{Math.round(l.punchInDistance)}m</span>
-                            </div>
-                          ) : '-'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                            l.status === 'Present'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          }`}>
-                            {l.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                    logs.map((l) => {
+                      const logId = l.id || l._id;
+                      const isDeleting = deletingId === logId;
+                      return (
+                        <tr key={logId || `${l.date}-${l.rollNo}`} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3 px-4 font-mono font-medium text-slate-200">
+                            {l.date}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-white">{l.studentName}</div>
+                            <div className="text-[10px] font-mono text-blue-400">{l.rollNo}</div>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-emerald-400">
+                            {l.punchInTime ? formatISTTime(l.punchInTime) : '-'}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-amber-400">
+                            {l.punchOutTime ? formatISTTime(l.punchOutTime) : '-'}
+                          </td>
+                          <td className="py-3 px-4 font-mono">
+                            {l.durationMinutes ? `${Math.floor(l.durationMinutes / 60)}h ${l.durationMinutes % 60}m` : '-'}
+                          </td>
+                          <td className="py-3 px-4 max-w-xs">
+                            {l.studySummary ? (
+                              <div className="text-xs text-slate-200 bg-slate-800 p-2 rounded-xl border border-slate-700/60 line-clamp-2">
+                                📖 {l.studySummary}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic text-[11px]">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-400">
+                            {l.punchInDistance != null ? (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-blue-400" />
+                                <span>{Math.round(l.punchInDistance)}m</span>
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                              l.status === 'Present'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            }`}>
+                              {l.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              disabled={isDeleting}
+                              onClick={() => handleDeleteLog(logId, l.studentName, l.date)}
+                              title={`Delete attendance log for ${l.studentName} on ${l.date}`}
+                              className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 text-rose-300 hover:text-white transition-all disabled:opacity-50"
+                            >
+                              <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? 'animate-pulse text-rose-400' : ''}`} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
