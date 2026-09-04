@@ -71,6 +71,7 @@ export async function POST(request, { params }) {
       if (name) updateData.name = name;
       if (phone) updateData.phone = phone;
       if (email) updateData.email = email;
+      if (body.password) updateData.password = body.password.trim();
 
       const updatedDoc = await Student.findOneAndUpdate(
         { $or: orConditions },

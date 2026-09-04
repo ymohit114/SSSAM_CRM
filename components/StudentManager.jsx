@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import {
   Users, UserPlus, Search, Edit2, Trash2,
   Phone, Mail, X, CheckCircle2, Shield, IndianRupee, BookOpen, Calendar,
-  AlertTriangle, Clock, UserCheck, Bell, ShieldAlert, MessageCircle, ArrowUpRight, DollarSign, Filter
+  AlertTriangle, Clock, UserCheck, Bell, ShieldAlert, MessageCircle, ArrowUpRight, DollarSign, Filter,
+  KeyRound, Eye, EyeOff, Copy, Check, Lock, Sparkles, RefreshCw
 } from 'lucide-react';
 import StudentFeeModal from './StudentFeeModal';
 import StudentApprovalModal from './StudentApprovalModal';
@@ -20,6 +21,75 @@ export default function StudentManager({
   const [editingStudent, setEditingStudent] = useState(null);
   const [feeModalStudent, setFeeModalStudent] = useState(null);
   const [approvalModalStudent, setApprovalModalStudent] = useState(null);
+
+  // Password visibility & management states
+  const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [copiedId, setCopiedId] = useState(null);
+  const [passwordModalStudent, setPasswordModalStudent] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
+
+  const togglePasswordVisibility = (id) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleCopyPassword = (pwd, id) => {
+    if (!pwd) return;
+    navigator.clipboard?.writeText(pwd);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleOpenPasswordModal = (student) => {
+    setPasswordModalStudent(student);
+    setNewPassword(student.password || '123456');
+    setShowNewPassword(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword.trim()) {
+      setPasswordError('Password cannot be empty.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    try {
+      const studentId = passwordModalStudent.id || passwordModalStudent._id || passwordModalStudent.rollNo || passwordModalStudent.phone;
+      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: newPassword.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update password');
+
+      setPasswordSuccess('Password updated successfully!');
+      if (onRefresh) onRefresh();
+      setTimeout(() => {
+        setPasswordModalStudent(null);
+      }, 1000);
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
   
   const [formData, setFormData] = useState({
     rollNo: '',
@@ -460,6 +530,55 @@ export default function StudentManager({
                     </div>
                   </div>
 
+                  {/* Student Password & Login Credentials Row */}
+                  <div className="p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-slate-400 text-[11px] font-semibold flex-shrink-0">Password:</span>
+                      <span className="font-mono text-white font-bold tracking-wider truncate">
+                        {visiblePasswords[s.id || s.rollNo || s.phone] ? (s.password || '123456') : '••••••••'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility(s.id || s.rollNo || s.phone)}
+                        className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
+                        title={visiblePasswords[s.id || s.rollNo || s.phone] ? "Hide password" : "Show password"}
+                      >
+                        {visiblePasswords[s.id || s.rollNo || s.phone] ? (
+                          <EyeOff className="w-3.5 h-3.5 text-amber-300" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPassword(s.password || '123456', s.id || s.rollNo || s.phone)}
+                        className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-all"
+                        title="Copy password"
+                      >
+                        {copiedId === (s.id || s.rollNo || s.phone) ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPasswordModal(s)}
+                        className="px-2 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-[10px] font-bold transition-all ml-0.5 flex items-center gap-1"
+                        title="Change student password"
+                      >
+                        <Lock className="w-3 h-3" />
+                        <span>Change</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Fee Summary Box */}
                   {!isPending && (
                     <div className={`p-3 rounded-2xl border space-y-1 ${
@@ -632,6 +751,32 @@ export default function StudentManager({
                 </div>
               </div>
 
+              {/* Password in Edit/Add Modal */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                  <span>Login Password *</span>
+                  <span className="text-[10px] text-slate-500">Student uses this to sign in</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showFormPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="e.g. 123456"
+                    required
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFormPassword(!showFormPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                    title={showFormPassword ? "Hide password" : "Show password"}
+                  >
+                    {showFormPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-300">Enrolled Course</label>
                 <input
@@ -683,6 +828,135 @@ export default function StudentManager({
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {passwordModalStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl space-y-5 relative">
+            <button
+              onClick={() => setPasswordModalStudent(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">Change Password</h3>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  {passwordModalStudent.name} &bull; {passwordModalStudent.rollNo}
+                </p>
+              </div>
+            </div>
+
+            {/* Current Password Info */}
+            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-1 text-xs">
+              <span className="text-[11px] text-slate-400 block font-medium">Current Password:</span>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-amber-300 font-bold text-sm">
+                  {passwordModalStudent.password || '123456'}
+                </span>
+                <span className="text-[10px] text-slate-500 font-medium">Active on portal</span>
+              </div>
+            </div>
+
+            {/* Error & Success Messages */}
+            {passwordError && (
+              <div className="p-3 bg-rose-950/60 border border-rose-500/40 rounded-xl text-xs text-rose-200 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{passwordSuccess}</span>
+              </div>
+            )}
+
+            {/* Change Password Form */}
+            <form onSubmit={handleSavePassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">New Password *</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPasswordError('');
+                    }}
+                    placeholder="Enter new password"
+                    required
+                    autoFocus
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                    title={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick presets */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setNewPassword('123456')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700 transition-all"
+                >
+                  Reset to 123456
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rand = Math.floor(100000 + Math.random() * 900000).toString();
+                    setNewPassword(rand);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700 transition-all"
+                >
+                  Generate 6-Digit PIN
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setPasswordModalStudent(null)}
+                  className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading || !newPassword.trim()}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {passwordLoading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Save Password</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

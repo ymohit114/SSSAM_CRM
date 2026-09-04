@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import {
   X, CheckCircle2, ShieldCheck, UserCheck, BookOpen,
-  IndianRupee, Calendar, Layers, AlertTriangle, UserX, Clock
+  IndianRupee, Calendar, Layers, AlertTriangle, UserX, Clock,
+  KeyRound, Eye, EyeOff
 } from 'lucide-react';
 
 export default function StudentApprovalModal({
@@ -28,6 +29,8 @@ export default function StudentApprovalModal({
     student.rollNo && !student.rollNo.startsWith('TEMP') ? student.rollNo : defaultRollNo
   );
   const [course, setCourse] = useState(student.course && student.course !== 'Not Assigned Yet' ? student.course : 'Full Stack Web Development');
+  const [password, setPassword] = useState(student.password || '123456');
+  const [showPassword, setShowPassword] = useState(false);
   const [feeType, setFeeType] = useState('single'); // 'single' | 'installment'
 
   // Single payment state
@@ -89,6 +92,7 @@ export default function StudentApprovalModal({
         phone: student.phone,
         email: student.email,
         name: student.name,
+        password: password.trim() || student.password || '123456',
         feeType,
         remainingFee,
         dueDate,
@@ -172,9 +176,10 @@ export default function StudentApprovalModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 pt-1">
-            <div>Mobile: <strong className="text-white font-mono">{student.phone}</strong></div>
+          <div className="grid grid-cols-3 gap-2 text-xs text-slate-400 pt-1">
+            <div>Mobile: <strong className="text-white font-mono block">{student.phone}</strong></div>
             <div>Email: <strong className="text-white truncate block">{student.email}</strong></div>
+            <div>Password: <strong className="text-amber-300 font-mono block">{student.password || '123456'}</strong></div>
           </div>
         </div>
 
@@ -189,10 +194,10 @@ export default function StudentApprovalModal({
         {/* Approval Form */}
         <form onSubmit={handleApprove} className="space-y-4 text-xs">
           
-          {/* Section 1: Roll No & Course */}
+          {/* Section 1: Roll No, Course & Password */}
           <div className="space-y-3">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              1. Assign Roll Number & Course
+              1. Assign Roll Number, Course & Login Password
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -218,6 +223,31 @@ export default function StudentApprovalModal({
                   placeholder="e.g. Full Stack Web Development"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500"
                 />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-bold text-slate-300 flex items-center justify-between">
+                <span>Account Password *</span>
+                <span className="text-[10px] text-slate-500 font-normal">Student will sign in with this password</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           </div>

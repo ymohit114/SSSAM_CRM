@@ -66,3 +66,57 @@ export async function GET() {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { rollNo, name, phone, email, password, course, remainingFee, dueDate, gender } = body;
+
+    if (!rollNo || !name) {
+      return NextResponse.json({
+        success: false,
+        message: 'Roll number and Name are required.'
+      }, { status: 400 });
+    }
+
+    const newStudentData = {
+      rollNo: rollNo.trim().toUpperCase(),
+      name: name.trim(),
+      phone: phone || '',
+      email: email || '',
+      password: password || '123456',
+      course: course || 'Full Stack Web Development',
+      remainingFee: Number(remainingFee != null ? remainingFee : 5000),
+      dueDate: dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      gender: gender || 'Male',
+      status: 'approved',
+      isApproved: true,
+      active: true
+    };
+
+    // 1. Create in MongoDB Atlas
+    let createdMongo = null;
+    try {
+      await connectToDatabase();
+      createdMongo = await Student.create(newStudentData);
+    } catch (e) {
+      console.warn('MongoDB create student note:', e.message);
+    }
+
+    // 2. Create in local db
+    let createdLocal = null;
+    try {
+      createdLocal = db.addStudent(newStudentData);
+    } catch (e) {
+      console.warn('Local db create student note:', e.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Student added successfully',
+      student: createdMongo || createdLocal || newStudentData
+    });
+  } catch (err) {
+    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+  }
+}
