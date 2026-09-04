@@ -22,15 +22,54 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Register in local database
-    const newStudent = db.registerStudent({
-      name,
-      email,
-      phone,
-      password
-    });
+    const cleanPhone = phone.trim();
+    const cleanEmail = email.trim().toLowerCase();
 
-    // Sync to MongoDB Atlas
+    // 1. Check existing records in MongoDB Atlas
+    try {
+      await connectToDatabase();
+      const existingMongo = await Student.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { email: cleanEmail }
+        ]
+      }).lean();
+
+      if (existingMongo) {
+        if (existingMongo.status === 'approved' || existingMongo.isApproved) {
+          return NextResponse.json({
+            success: false,
+            message: `A student with this Mobile Number (${cleanPhone}) or Email is already registered and approved (${existingMongo.rollNo}). Please login using your password.`
+          }, { status: 409 });
+        } else {
+          return NextResponse.json({
+            success: false,
+            message: `An application with this Mobile Number (${cleanPhone}) is already submitted and pending admin approval.`
+          }, { status: 409 });
+        }
+      }
+    } catch (dbErr) {
+      console.warn('MongoDB duplicate check note:', dbErr.message);
+    }
+
+    // 2. Register in local database
+    let newStudent;
+    try {
+      newStudent = db.registerStudent({
+        name: name.trim(),
+        email: cleanEmail,
+        phone: cleanPhone,
+        password: password.trim()
+      });
+    } catch (localErr) {
+      // If local db throws duplicate error
+      return NextResponse.json({
+        success: false,
+        message: localErr.message || 'An account with this Mobile Number or Email already exists.'
+      }, { status: 409 });
+    }
+
+    // 3. Sync to MongoDB Atlas
     try {
       await connectToDatabase();
       await Student.create({
