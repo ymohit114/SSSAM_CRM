@@ -8,12 +8,28 @@ import StudentPunchCard from '@/components/StudentPunchCard';
 import StudentFeeCard from '@/components/StudentFeeCard';
 import StudentHistoryModal from '@/components/StudentHistoryModal';
 import { getCurrentPosition, calculateDistance } from '@/lib/geo';
+import { initAntiTampering, checkLocationIntegrity } from '@/lib/antiSpoof';
 
 export default function StudentPortalPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [securityViolation, setSecurityViolation] = useState(null);
+
+  // Initialize anti-devtools and anti-tampering monitoring
+  useEffect(() => {
+    const cleanup = initAntiTampering({
+      onViolation: (reason) => {
+        setSecurityViolation(reason || 'Developer Tools / Location Simulation detected.');
+      },
+      onRestore: () => {
+        setSecurityViolation(null);
+      }
+    });
+
+    return () => cleanup();
+  }, []);
 
   const [institute, setInstitute] = useState({
     name: 'SSSAM Academy',
@@ -129,6 +145,10 @@ export default function StudentPortalPage() {
   let isInside = false;
   const maxRadius = institute?.geofenceRadius || 25;
 
+  const locationIntegrity = checkLocationIntegrity(gpsPosition);
+  const isSecurityViolation = Boolean(securityViolation || locationIntegrity.isTampered);
+  const activeViolationReason = securityViolation || (locationIntegrity.isTampered ? locationIntegrity.reason : null);
+
   if (gpsPosition && institute?.latitude && institute?.longitude) {
     distance = calculateDistance(
       gpsPosition.latitude,
@@ -136,14 +156,21 @@ export default function StudentPortalPage() {
       institute.latitude,
       institute.longitude
     );
-    isInside = distance <= maxRadius;
+    isInside = distance <= maxRadius && !isSecurityViolation;
   }
 
   const handlePunchIn = async (data) => {
+    if (isSecurityViolation) {
+      throw new Error(`Security Violation: ${activeViolationReason || 'Location tampering or DevTools detected. Please close developer tools.'}`);
+    }
+
     const res = await fetch('/api/attendance/punch-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...data,
+        isTampered: isSecurityViolation
+      })
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.message || 'Punch in failed');
@@ -151,10 +178,17 @@ export default function StudentPortalPage() {
   };
 
   const handlePunchOut = async (data) => {
+    if (isSecurityViolation) {
+      throw new Error(`Security Violation: ${activeViolationReason || 'Location tampering or DevTools detected. Please close developer tools.'}`);
+    }
+
     const res = await fetch('/api/attendance/punch-out', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...data,
+        isTampered: isSecurityViolation
+      })
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.message || 'Punch out failed');
@@ -263,6 +297,7 @@ export default function StudentPortalPage() {
           gpsPosition={gpsPosition}
           distance={distance}
           isInside={isInside}
+          securityViolation={activeViolationReason}
           gpsLoading={gpsLoading}
           gpsError={gpsError}
           refreshGPS={acquireGPS}

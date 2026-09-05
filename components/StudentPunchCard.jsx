@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, CheckCircle2, XCircle, Clock, AlertTriangle,
-  RefreshCw, Navigation, Sparkles, LogIn, LogOut, BellRing, ChevronDown, ChevronUp, Layers, BookOpen
+  RefreshCw, Navigation, Sparkles, LogIn, LogOut, BellRing, ChevronDown, ChevronUp, Layers, BookOpen, ShieldAlert
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import dynamic from 'next/dynamic';
@@ -22,6 +22,7 @@ export default function StudentPunchCard({
   gpsPosition,
   distance,
   isInside,
+  securityViolation,
   gpsLoading,
   gpsError,
   refreshGPS,
@@ -149,6 +150,15 @@ export default function StudentPunchCard({
   };
 
   const handlePunchIn = async () => {
+    if (securityViolation) {
+      sounds.playError();
+      setStatusMessage({
+        type: 'error',
+        text: `🔒 Security Violation: ${securityViolation}. Attendance punching is locked.`
+      });
+      return;
+    }
+
     if (!selectedStudentId) {
       setStatusMessage({ type: 'error', text: 'Please select a student first.' });
       return;
@@ -217,6 +227,15 @@ export default function StudentPunchCard({
 
   // Step 1: Open Study Summary modal when clicking Punch Out
   const handleInitiatePunchOut = () => {
+    if (securityViolation) {
+      sounds.playError();
+      setStatusMessage({
+        type: 'error',
+        text: `🔒 Security Violation: ${securityViolation}. Attendance punching is locked.`
+      });
+      return;
+    }
+
     if (!gpsPosition || distance == null) {
       sounds.playError();
       setStatusMessage({
@@ -383,10 +402,27 @@ export default function StudentPunchCard({
           )}
 
           {/* Large High-Contrast Tactile Punch Button */}
-          <div className="max-w-md mx-auto space-y-2">
+          <div className="max-w-md mx-auto space-y-3">
+
+            {/* Security Warning Box when DevTools / Sensors Override is detected */}
+            {securityViolation && (
+              <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-500/40 text-rose-900 text-xs space-y-2 text-left animate-fade-in shadow-md">
+                <div className="flex items-center gap-2 font-black text-sm text-rose-800">
+                  <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 animate-bounce" />
+                  <span>Security Alert: Developer Tools / Location Override Detected</span>
+                </div>
+                <p className="text-xs text-rose-700 leading-relaxed font-medium">
+                  {securityViolation}
+                </p>
+                <div className="text-[11px] bg-rose-100/90 p-2 rounded-xl border border-rose-300 text-rose-950 font-semibold flex items-center gap-1.5">
+                  <span>🔒 Attendance punching is locked to prevent unauthorized remote punch. Please close Developer Tools (F12) or open on a real mobile device.</span>
+                </div>
+              </div>
+            )}
+
             {!isPunchedIn && !isPunchedOut && (
               <>
-                {isInside && (
+                {isInside && !securityViolation && (
                   <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-xs font-semibold text-slate-800 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
                     <MapPin className="w-4 h-4 text-black" />
                     <span>📍 Welcome! You are inside campus. Tap below to Punch In:</span>
@@ -396,18 +432,26 @@ export default function StudentPunchCard({
                 <button
                   id="btn-punch-in"
                   type="button"
-                  disabled={punching || !isInside}
+                  disabled={punching || !isInside || Boolean(securityViolation)}
                   onClick={handlePunchIn}
                   className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
-                    !isInside
+                    securityViolation
+                      ? 'bg-rose-900/10 text-rose-700 border-2 border-rose-400/50 cursor-not-allowed'
+                      : !isInside
                       ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
                       : 'bg-black text-white hover:bg-slate-800 shadow-2xl hover:scale-[1.02]'
                   }`}
                 >
-                  <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
+                  {securityViolation ? (
+                    <ShieldAlert className="w-5 h-5 text-rose-600" />
+                  ) : (
+                    <LogIn className="w-5 h-5 sm:w-6 sm:h-6" />
+                  )}
                   <span>
                     {punching
                       ? 'Marking Attendance...'
+                      : securityViolation
+                      ? '🔒 PUNCH LOCKED (DEVTOOLS DETECTED)'
                       : !isInside
                       ? `Outside Campus (${Math.round(distance || 0)}m)`
                       : 'PUNCH IN'}
@@ -420,18 +464,26 @@ export default function StudentPunchCard({
               <button
                 id="btn-punch-out"
                 type="button"
-                disabled={punching || !isInside}
+                disabled={punching || !isInside || Boolean(securityViolation)}
                 onClick={handleInitiatePunchOut}
                 className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${
-                  !isInside
+                  securityViolation
+                    ? 'bg-rose-900/10 text-rose-700 border-2 border-rose-400/50 cursor-not-allowed'
+                    : !isInside
                     ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
                     : 'bg-slate-900 text-white hover:bg-black border border-black hover:scale-[1.02]'
                 }`}
               >
-                <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+                {securityViolation ? (
+                  <ShieldAlert className="w-5 h-5 text-rose-600" />
+                ) : (
+                  <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+                )}
                 <span>
                   {punching
                     ? 'Recording...'
+                    : securityViolation
+                    ? '🔒 PUNCH LOCKED (DEVTOOLS DETECTED)'
                     : !isInside
                     ? `Outside Campus (${Math.round(distance || 0)}m)`
                     : 'PUNCH OUT & END SESSION'}

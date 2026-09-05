@@ -11,7 +11,14 @@ import { getIndianDateTime } from '@/lib/indianTime';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentId, lat, lng, selfieImg, overrideDistance, time, date } = body;
+    const { studentId, lat, lng, selfieImg, overrideDistance, time, date, isTampered } = body;
+
+    if (isTampered) {
+      return NextResponse.json({
+        success: false,
+        message: 'Security Violation: Developer Tools or simulated GPS location detected. Please punch via a real mobile device without simulation tools.'
+      }, { status: 403 });
+    }
 
     if (!studentId) {
       return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
