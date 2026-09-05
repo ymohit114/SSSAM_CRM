@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, BookOpen, IndianRupee, Calendar, AlertTriangle,
   CheckCircle2, ShieldCheck, RefreshCw, Sparkles, ShieldAlert
@@ -8,6 +8,17 @@ import {
 import { calculateStudentFee } from '@/lib/feeHelper';
 
 export default function StudentFeeModal({ student, isOpen = true, onClose, onUpdated, onSuccess }) {
+  // Close on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (onClose) onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (isOpen === false || !student) return null;
 
   const currentFee = calculateStudentFee(student);
@@ -82,7 +93,12 @@ export default function StudentFeeModal({ student, isOpen = true, onClose, onUpd
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
         
         {/* Header */}

@@ -47,6 +47,21 @@ export default function StudentPunchCard({
   const [studySummary, setStudySummary] = useState('');
   const [studyError, setStudyError] = useState('');
 
+  // Close study summary modal on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (showStudyModal) {
+          setShowStudyModal(false);
+        }
+      }
+    };
+    if (showStudyModal) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showStudyModal]);
+
   // Auto-select logged in student
   useEffect(() => {
     if (students && students.length > 0 && !selectedStudentId) {
@@ -564,7 +579,12 @@ export default function StudentPunchCard({
 
       {/* Study Summary Modal (For Punch Out) */}
       {showStudyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowStudyModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        >
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-900">
             
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">

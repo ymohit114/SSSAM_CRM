@@ -35,6 +35,17 @@ export default function StudentHistoryModal({ student, onClose }) {
     fetchHistory();
   }, [student]);
 
+  // Close on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (onClose) onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleDeleteLog = async (logId, date) => {
     if (!window.confirm(`Are you sure you want to delete this attendance log for ${date}?`)) {
       return;
@@ -62,7 +73,12 @@ export default function StudentHistoryModal({ student, onClose }) {
   const { logs = [], stats = {} } = history;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+    >
       <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl space-y-5 max-h-[90vh] flex flex-col text-slate-900">
         
         {/* Header */}

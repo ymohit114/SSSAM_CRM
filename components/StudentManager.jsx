@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, UserPlus, Search, Edit2, Trash2,
   Phone, Mail, X, CheckCircle2, Shield, IndianRupee, BookOpen, Calendar,
@@ -37,6 +37,21 @@ export default function StudentManager({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Close Add/Edit modal on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (showAddModal) {
+          setShowAddModal(false);
+        }
+      }
+    };
+    if (showAddModal) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showAddModal]);
 
   // Partition students
   const approvedStudents = students.filter(s => s.status === 'approved' || (s.isApproved && s.status !== 'pending'));
@@ -563,7 +578,12 @@ export default function StudentManager({
 
       {/* Add / Edit Student Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
             <button
               onClick={() => setShowAddModal(false)}

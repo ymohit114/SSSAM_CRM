@@ -88,10 +88,30 @@ export default function InAppUpdateModal({ onUpdateAvailable }) {
     setIsOpen(false);
   };
 
+  // Close on ESC key (if not forceUpdate)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (!updateInfo?.forceUpdate) {
+          handleDismiss();
+        }
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, updateInfo]);
+
   if (!isOpen || !updateInfo) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !updateInfo?.forceUpdate) handleDismiss();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+    >
       <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 relative overflow-hidden">
         
         {/* Ambient Top Glow */}
