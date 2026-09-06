@@ -5,17 +5,36 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getIndianDateTime } from '@/lib/indianTime';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 60, keyPrefix: 'attendance_manual' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     const { studentId, date, punchInTime, punchOutTime, status, remarks, studySummary } = body;
 
     if (!studentId || !date) {
-      return NextResponse.json({ success: false, message: 'Student and date are required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Student and date are required.' }, { status: 400, headers: cors.headers });
     }
 
     let student = db.getStudentById(studentId);
@@ -49,7 +68,7 @@ export async function POST(request) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404, headers: cors.headers });
     }
 
     const finalPunchIn = punchInTime ? (punchInTime.length === 5 ? `${punchInTime}:00` : punchInTime) : '09:00:00';
@@ -136,8 +155,8 @@ export async function POST(request) {
       success: true,
       message: 'Attendance record updated manually.',
       record: mongoRecord || localRecord
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message || 'Failed to update attendance.' }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message || 'Failed to update attendance.' }, { status: 400, headers: cors.headers });
   }
 }

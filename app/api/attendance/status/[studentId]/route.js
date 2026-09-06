@@ -7,16 +7,35 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { isWithinGeofence } from '@/lib/geo';
 import { getIndianDateTime } from '@/lib/indianTime';
 import { executeAutoPunchOut } from '@/lib/autoPunchOutService';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
 export async function GET(request, { params }) {
+  const cors = handleCors(request);
+  const { studentId } = params;
+
+  // Rate limit status checks (120 req / min)
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'attendance_status' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Student can only view own status; Admin can view any
+  const auth = verifyAuth(request, 'any', studentId);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     // Run background auto punch out check
     await executeAutoPunchOut().catch(e => console.warn('Auto punch out check in status route:', e.message));
 
-    const { studentId } = params;
     const { searchParams } = new URL(request.url);
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
@@ -41,6 +60,7 @@ export async function GET(request, { params }) {
       if (doc) {
         student = {
           id: doc._id.toString(),
+          _id: doc._id.toString(),
           rollNo: doc.rollNo,
           name: doc.name,
           phone: doc.phone,
@@ -75,7 +95,7 @@ export async function GET(request, { params }) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found' }, { status: 404, headers: cors.headers });
     }
 
     const institute = db.getInstitute();
@@ -107,8 +127,8 @@ export async function GET(request, { params }) {
       },
       currentDistance: distance,
       isWithinGeofence: isWithin
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }

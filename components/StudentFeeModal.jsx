@@ -6,6 +6,7 @@ import {
   CheckCircle2, ShieldCheck, RefreshCw, Sparkles, ShieldAlert
 } from 'lucide-react';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function StudentFeeModal({ student, isOpen = true, onClose, onUpdated, onSuccess }) {
   // Close on ESC key
@@ -46,7 +47,7 @@ export default function StudentFeeModal({ student, isOpen = true, onClose, onUpd
 
     try {
       const studentId = student.id || student._id || student.rollNo || student.phone;
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/fee`, {
+      const res = await fetchWithAuth(`/api/students/${encodeURIComponent(studentId)}/fee`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +76,7 @@ export default function StudentFeeModal({ student, isOpen = true, onClose, onUpd
 
     try {
       const studentId = student.id || student._id || student.rollNo || student.phone;
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/fee`, {
+      const res = await fetchWithAuth(`/api/students/${encodeURIComponent(studentId)}/fee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, amount })

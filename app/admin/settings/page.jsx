@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import InstituteSettings from '@/components/InstituteSettings';
 import AppUpdateManager from '@/components/AppUpdateManager';
 import { MapPin, Smartphone, Sliders, Sparkles } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function AdminSettingsPage() {
   const [institute, setInstitute] = useState(null);
@@ -11,7 +12,7 @@ export default function AdminSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetchWithAuth('/api/settings');
       const data = await res.json();
       if (data.settings) setInstitute(data.settings);
     } catch (err) {

@@ -10,6 +10,7 @@ import {
 import StudentFeeModal from './StudentFeeModal';
 import StudentApprovalModal from './StudentApprovalModal';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function StudentManager({
   students = [],
@@ -136,7 +137,7 @@ export default function StudentManager({
     try {
       const url = editingStudent ? `/api/students/${editingStudent.id}` : '/api/students';
       const method = editingStudent ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await fetchWithAuth(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -157,7 +158,7 @@ export default function StudentManager({
     if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
 
     try {
-      const res = await fetch(`/api/students/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/students/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
       onRefresh();
     } catch (err) {

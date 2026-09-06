@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function ManualAttendanceModal({ isOpen, onClose, students = [], onSaved }) {
   const [studentId, setStudentId] = useState('');
@@ -39,7 +40,7 @@ export default function ManualAttendanceModal({ isOpen, onClose, students = [], 
     setError('');
 
     try {
-      const res = await fetch('/api/attendance/manual', {
+      const res = await fetchWithAuth('/api/attendance/manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

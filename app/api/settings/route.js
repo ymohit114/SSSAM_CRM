@@ -2,11 +2,24 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import InstituteSettings from '@/models/InstituteSettings';
 import { connectToDatabase } from '@/lib/mongodb';
+import { verifyAuth, getAuthUser } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
+export async function GET(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'settings_get' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     let settings = null;
     try {
@@ -35,13 +48,30 @@ export async function GET() {
       settings = db.getInstitute();
     }
 
-    return NextResponse.json({ success: true, settings });
+    const user = getAuthUser(request);
+    const isAdmin = user && user.role === 'admin';
+
+    // Mask sensitive adminPin if not admin
+    const safeSettings = {
+      ...settings,
+      adminPin: isAdmin ? settings.adminPin : '****'
+    };
+
+    return NextResponse.json({ success: true, settings: safeSettings }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }
 
 export async function PUT(request) {
+  const cors = handleCors(request);
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     const {
@@ -85,8 +115,12 @@ export async function PUT(request) {
       console.warn('MongoDB settings sync note:', e.message);
     }
 
-    return NextResponse.json({ success: true, message: 'Settings updated successfully', settings: updated });
+    return NextResponse.json({
+      success: true,
+      message: 'Settings updated successfully',
+      settings: updated
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }

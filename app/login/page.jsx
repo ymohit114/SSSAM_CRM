@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   GraduationCap, LogIn, Lock, User, CheckCircle2, AlertTriangle, UserPlus
 } from 'lucide-react';
+import { setStoredToken } from '@/lib/apiClient';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,8 +44,8 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store in localStorage
-      localStorage.setItem('sssam_user', JSON.stringify(data.user));
+      // Store in localStorage & cookies
+      setStoredToken(data.token, data.user);
       setSuccessMsg(`Welcome, ${data.user.name}! Redirecting...`);
       
       setTimeout(() => {

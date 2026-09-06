@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, X, Clock, AlertCircle, CheckCircle2, User, BookOpen } from 'lucide-react';
 import { formatISTTime, getIndianDateTime } from '@/lib/indianTime';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function AdminPunchOutModal({
   student,
@@ -43,7 +44,7 @@ export default function AdminPunchOutModal({
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/attendance/admin-punch-out', {
+      const res = await fetchWithAuth('/api/attendance/admin-punch-out', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

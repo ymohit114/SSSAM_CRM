@@ -6,6 +6,7 @@ import {
   IndianRupee, Calendar, Layers, AlertTriangle, UserX, Clock,
   KeyRound, Eye, EyeOff
 } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function StudentApprovalModal({
   student,
@@ -112,7 +113,7 @@ export default function StudentApprovalModal({
       };
 
       const studentId = student.id || student._id || student.rollNo || student.phone;
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}/approve`, {
+      const res = await fetchWithAuth(`/api/students/${encodeURIComponent(studentId)}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -136,7 +137,7 @@ export default function StudentApprovalModal({
     setLoading(true);
     try {
       const studentId = student.id || student._id || student.rollNo || student.phone;
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/students/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to reject registration');

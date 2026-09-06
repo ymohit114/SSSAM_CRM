@@ -12,6 +12,7 @@ import { initNotifications, sendLocalNotification } from '@/lib/notifications';
 import { startGeofenceWatcher, stopGeofenceWatcher } from '@/lib/geoWatcher';
 import { checkStudentFeeDueStatus } from '@/lib/feeReminderService';
 import { formatISTTime } from '@/lib/indianTime';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 // Dynamically import GeofenceMap to prevent SSR leaflet errors
 const GeofenceMap = dynamic(() => import('./GeofenceMap'), { ssr: false });
@@ -74,7 +75,7 @@ export default function StudentPunchCard({
   const fetchStudentStatus = useCallback(async (studentId) => {
     if (!studentId) return;
     try {
-      const res = await fetch(`/api/attendance/status/${studentId}`);
+      const res = await fetchWithAuth(`/api/attendance/status/${studentId}`);
       if (res.ok) {
         const data = await res.json();
         setTodayRecord(data.todayRecord || null);

@@ -9,6 +9,7 @@ import StudentFeeCard from '@/components/StudentFeeCard';
 import StudentHistoryModal from '@/components/StudentHistoryModal';
 import { getCurrentPosition, calculateDistance } from '@/lib/geo';
 import { initAntiTampering, checkLocationIntegrity } from '@/lib/antiSpoof';
+import { fetchWithAuth, clearStoredToken } from '@/lib/apiClient';
 
 export default function StudentPortalPage() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function StudentPortalPage() {
           setCurrentUser(userObj);
 
           // Fetch fresh details from API (latest course & remaining fees updated by Admin)
-          fetch(`/api/students/${userObj.id || userObj.rollNo}`)
+          fetchWithAuth(`/api/students/${userObj.id || userObj.rollNo}`)
             .then(res => res.json())
             .then(data => {
               if (data.student) {
@@ -164,7 +165,7 @@ export default function StudentPortalPage() {
       throw new Error(`Security Violation: ${activeViolationReason || 'Location tampering or DevTools detected. Please close developer tools.'}`);
     }
 
-    const res = await fetch('/api/attendance/punch-in', {
+    const res = await fetchWithAuth('/api/attendance/punch-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -182,7 +183,7 @@ export default function StudentPortalPage() {
       throw new Error(`Security Violation: ${activeViolationReason || 'Location tampering or DevTools detected. Please close developer tools.'}`);
     }
 
-    const res = await fetch('/api/attendance/punch-out', {
+    const res = await fetchWithAuth('/api/attendance/punch-out', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -196,7 +197,7 @@ export default function StudentPortalPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('sssam_user');
+    clearStoredToken();
     router.push('/login?role=student');
   };
 

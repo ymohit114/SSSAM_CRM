@@ -8,6 +8,7 @@ import {
 import ManualAttendanceModal from './ManualAttendanceModal';
 import AdminPunchOutModal from './AdminPunchOutModal';
 import { formatISTTime } from '@/lib/indianTime';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function AdminDashboard({
   institute,
@@ -25,7 +26,7 @@ export default function AdminDashboard({
   const loadTodayAttendance = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/attendance/today');
+      const res = await fetchWithAuth('/api/attendance/today');
       const data = await res.json();
       if (data.success) {
         setTodayData(data);
@@ -49,7 +50,7 @@ export default function AdminDashboard({
         ? `/api/attendance/history?id=${encodeURIComponent(attendanceId)}`
         : `/api/attendance/history?date=${todayStr}&studentId=${encodeURIComponent(studentId)}`;
 
-      const res = await fetch(deleteUrl, { method: 'DELETE' });
+      const res = await fetchWithAuth(deleteUrl, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to delete today's attendance");
 

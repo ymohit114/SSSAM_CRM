@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { formatISTTime, getIndianDateTime } from '@/lib/indianTime';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function AttendanceReports({
   institute,
@@ -59,7 +60,7 @@ export default function AttendanceReports({
         status: selectedAttendanceStatus
       }).toString();
 
-      const res = await fetch(`/api/attendance/history?${query}`);
+      const res = await fetchWithAuth(`/api/attendance/history?${query}`);
       const data = await res.json();
       if (data.success) {
         setLogs(data.logs || []);
@@ -78,7 +79,7 @@ export default function AttendanceReports({
 
     try {
       setDeletingId(logId);
-      const res = await fetch(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
+      const res = await fetchWithAuth(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -106,7 +107,7 @@ export default function AttendanceReports({
         ...(selectedAttendanceStudent ? { studentId: selectedAttendanceStudent } : {})
       }).toString();
 
-      const res = await fetch(`/api/attendance/history?${query}`, {
+      const res = await fetchWithAuth(`/api/attendance/history?${query}`, {
         method: 'DELETE'
       });
       const data = await res.json();

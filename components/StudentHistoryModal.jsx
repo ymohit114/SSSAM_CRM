@@ -6,6 +6,7 @@ import {
   Award, X, MapPin, Trash2
 } from 'lucide-react';
 import { formatISTTime } from '@/lib/indianTime';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export default function StudentHistoryModal({ student, onClose }) {
   const [history, setHistory] = useState({ logs: [], stats: {} });
@@ -19,7 +20,7 @@ export default function StudentHistoryModal({ student, onClose }) {
     
     try {
       setLoading(true);
-      const res = await fetch(`/api/auth/student-history/${encodeURIComponent(identifier)}`);
+      const res = await fetchWithAuth(`/api/auth/student-history/${encodeURIComponent(identifier)}`);
       const data = await res.json();
       if (data.success) {
         setHistory(data);
@@ -53,7 +54,7 @@ export default function StudentHistoryModal({ student, onClose }) {
 
     try {
       setDeletingId(logId);
-      const res = await fetch(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
+      const res = await fetchWithAuth(`/api/attendance/history?id=${encodeURIComponent(logId)}`, {
         method: 'DELETE'
       });
       const data = await res.json();

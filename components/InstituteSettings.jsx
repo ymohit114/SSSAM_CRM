@@ -6,6 +6,7 @@ import {
   AlertCircle, Save, Sliders
 } from 'lucide-react';
 import { getCurrentPosition } from '@/lib/geo';
+import { fetchWithAuth } from '@/lib/apiClient';
 import dynamic from 'next/dynamic';
 
 const GeofenceMap = dynamic(() => import('./GeofenceMap'), { ssr: false });
@@ -76,7 +77,7 @@ export default function InstituteSettings({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/settings', {
+      const res = await fetchWithAuth('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

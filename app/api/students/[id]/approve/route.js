@@ -4,8 +4,27 @@ import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function POST(request, { params }) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 60, keyPrefix: 'student_approve' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { id } = params;
     const body = await request.json();
@@ -26,7 +45,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({
         success: false,
         message: 'Roll Number and Course Name are required for approval.'
-      }, { status: 400 });
+      }, { status: 400, headers: cors.headers });
     }
 
     const cleanRollNo = rollNo.trim().toUpperCase();
@@ -120,7 +139,7 @@ export async function POST(request, { params }) {
     }
 
     if (!approvedStudent) {
-      return NextResponse.json({ success: false, message: 'Student record not found for approval.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student record not found for approval.' }, { status: 404, headers: cors.headers });
     }
 
     const studentWithFee = {
@@ -132,8 +151,8 @@ export async function POST(request, { params }) {
       success: true,
       message: `Student ${approvedStudent.name} (${approvedStudent.rollNo}) has been approved and activated!`,
       student: studentWithFee
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }

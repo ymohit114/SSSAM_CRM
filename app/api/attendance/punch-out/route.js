@@ -6,8 +6,21 @@ import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateDistance } from '@/lib/geo';
 import { getIndianDateTime } from '@/lib/indianTime';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit punch out attempts (30 req / min)
+  const rateLimit = checkRateLimit(request, { maxRequests: 30, keyPrefix: 'attendance_punch_out' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const body = await request.json();
     const { studentId, lat, lng, selfieImg, studySummary, overrideDistance, time, date, isTampered } = body;
@@ -16,18 +29,24 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         message: 'Security Violation: Developer Tools or simulated GPS location detected. Please punch via a real mobile device without simulation tools.'
-      }, { status: 403 });
+      }, { status: 403, headers: cors.headers });
     }
 
     if (!studentId) {
-      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400, headers: cors.headers });
+    }
+
+    // Authorization: Student can only punch out for self; Admin can punch for anyone
+    const auth = verifyAuth(request, 'any', studentId);
+    if (!auth.authorized) {
+      return auth.response;
     }
 
     if (!studySummary || studySummary.trim().length < 20) {
       return NextResponse.json({
         success: false,
         message: 'Daily study summary is required (Minimum 20 characters).'
-      }, { status: 400 });
+      }, { status: 400, headers: cors.headers });
     }
 
     let student = db.getStudentById(studentId);
@@ -60,7 +79,7 @@ export async function POST(request) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404, headers: cors.headers });
     }
 
     const institute = db.getInstitute();
@@ -73,10 +92,10 @@ export async function POST(request) {
     if (!overrideDistance && distance > maxRadius) {
       return NextResponse.json({
         success: false,
-        message: `Punch Out Failed: You are ${Math.round(distance)}m away from ${institute.name}. Maximum allowed distance is ${maxRadius}m.`,
+        message: `Punch Out Failed: You are ${Math.round(distance)}m away from ${institute.name}. Maximum allowed distance is ${maxRadius}m. Please be inside campus.`,
         currentDistance: distance,
         maxRadius
-      }, { status: 403 });
+      }, { status: 403, headers: cors.headers });
     }
 
     const ist = getIndianDateTime();
@@ -95,7 +114,7 @@ export async function POST(request) {
       studySummary: studySummary.trim()
     });
 
-    // Also sync punch-out to MongoDB Attendance collection
+    // Sync to MongoDB Attendance collection
     try {
       await connectToDatabase();
       await Attendance.findOneAndUpdate(
@@ -106,25 +125,29 @@ export async function POST(request) {
           ]
         },
         {
+          studentId: student.id,
+          studentName: student.name,
+          rollNo: student.rollNo,
+          course: student.course,
+          date: dateStr,
           punchOutTime: timeStr,
           punchOutLat: userLat || institute.latitude,
           punchOutLng: userLng || institute.longitude,
           punchOutDistance: distance === 999999 ? 0 : distance,
-          studySummary: studySummary.trim(),
-          durationMinutes: record.durationMinutes || 0
-        }
+          studySummary: studySummary.trim()
+        },
+        { upsert: true, new: true }
       );
     } catch (e) {
-      console.warn('MongoDB punch out sync note:', e.message);
+      console.warn('MongoDB attendance punch out sync note:', e.message);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Punch Out successful! Total duration: ${Math.floor(record.durationMinutes / 60)}h ${record.durationMinutes % 60}m`,
-      record,
-      student
-    });
+      message: `Punch Out recorded successfully! Great work today!`,
+      record
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }

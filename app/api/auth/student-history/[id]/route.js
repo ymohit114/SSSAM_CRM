@@ -5,17 +5,36 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET(request, { params }) {
-  try {
-    const { id } = params;
-    if (!id) {
-      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
-    }
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
+export async function GET(request, { params }) {
+  const cors = handleCors(request);
+  const { id } = params;
+
+  if (!id) {
+    return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400, headers: cors.headers });
+  }
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'student_history' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Student can only view own history; Admin can view any
+  const auth = verifyAuth(request, 'any', id);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
+  try {
     let student = null;
     let logs = [];
 
@@ -87,12 +106,12 @@ export async function GET(request, { params }) {
         return NextResponse.json({
           success: true,
           ...localData
-        });
+        }, { headers: cors.headers });
       }
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404, headers: cors.headers });
     }
 
     const feeInfo = calculateStudentFee(student);
@@ -112,8 +131,8 @@ export async function GET(request, { params }) {
         lateDays,
         totalHours: Math.round((totalMinutes / 60) * 10) / 10
       }
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }

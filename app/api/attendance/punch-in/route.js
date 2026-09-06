@@ -7,8 +7,21 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { calculateDistance } from '@/lib/geo';
 import { checkStudentFeeDueStatus } from '@/lib/feeReminderService';
 import { getIndianDateTime } from '@/lib/indianTime';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit punch in attempts (30 req / min)
+  const rateLimit = checkRateLimit(request, { maxRequests: 30, keyPrefix: 'attendance_punch_in' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const body = await request.json();
     const { studentId, lat, lng, selfieImg, overrideDistance, time, date, isTampered } = body;
@@ -17,11 +30,17 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         message: 'Security Violation: Developer Tools or simulated GPS location detected. Please punch via a real mobile device without simulation tools.'
-      }, { status: 403 });
+      }, { status: 403, headers: cors.headers });
     }
 
     if (!studentId) {
-      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400, headers: cors.headers });
+    }
+
+    // Authorization: Student can only punch in for self; Admin can punch for anyone
+    const auth = verifyAuth(request, 'any', studentId);
+    if (!auth.authorized) {
+      return auth.response;
     }
 
     let student = null;
@@ -64,7 +83,7 @@ export async function POST(request) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404, headers: cors.headers });
     }
 
     const institute = db.getInstitute();
@@ -80,7 +99,7 @@ export async function POST(request) {
         message: `Punch In Failed: You are ${Math.round(distance)}m away from ${institute.name}. Maximum allowed distance is ${maxRadius}m. Please be inside campus.`,
         currentDistance: distance,
         maxRadius
-      }, { status: 403 });
+      }, { status: 403, headers: cors.headers });
     }
 
     const ist = getIndianDateTime();
@@ -140,8 +159,8 @@ export async function POST(request) {
       record,
       student,
       feeReminder
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }

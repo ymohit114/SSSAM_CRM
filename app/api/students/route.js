@@ -3,11 +3,30 @@ import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
+export async function GET(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'students_list' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin or Authenticated user
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     let isMongoConnected = false;
     let mongoStudents = [];
@@ -56,18 +75,30 @@ export async function GET() {
         success: true,
         count: mongoStudents.length,
         students: mongoStudents
-      });
+      }, { headers: cors.headers });
     }
 
     // 2. Fallback to local db if MongoDB is not connected
     const students = db.getStudents();
-    return NextResponse.json({ success: true, count: students.length, students });
+    return NextResponse.json({ success: true, count: students.length, students }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }
 
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 60, keyPrefix: 'students_create' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     const { rollNo, name, phone, email, password, course, remainingFee, dueDate, gender } = body;
@@ -76,7 +107,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         message: 'Roll number and Name are required.'
-      }, { status: 400 });
+      }, { status: 400, headers: cors.headers });
     }
 
     const newStudentData = {
@@ -115,8 +146,8 @@ export async function POST(request) {
       success: true,
       message: 'Student added successfully',
       student: createdMongo || createdLocal || newStudentData
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }

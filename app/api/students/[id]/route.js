@@ -4,10 +4,29 @@ import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import { connectToDatabase } from '@/lib/mongodb';
 import { calculateStudentFee } from '@/lib/feeHelper';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function GET(request, { params }) {
+  const cors = handleCors(request);
+  const { id } = params;
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'student_get' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Student can only view self; Admin can view any
+  const auth = verifyAuth(request, 'any', id);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
-    const { id } = params;
     let student = null;
 
     // 1. Try finding in MongoDB Atlas
@@ -25,6 +44,7 @@ export async function GET(request, { params }) {
       if (doc) {
         const s = {
           id: doc._id.toString(),
+          _id: doc._id.toString(),
           rollNo: doc.rollNo,
           name: doc.name,
           phone: doc.phone,
@@ -59,18 +79,26 @@ export async function GET(request, { params }) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found' }, { status: 404, headers: cors.headers });
     }
 
-    return NextResponse.json({ success: true, student });
+    return NextResponse.json({ success: true, student }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }
 
 export async function PUT(request, { params }) {
+  const cors = handleCors(request);
+  const { id } = params;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
-    const { id } = params;
     const body = await request.json();
 
     // 1. Update in MongoDB Atlas
@@ -100,16 +128,23 @@ export async function PUT(request, { params }) {
       success: true,
       message: 'Student updated successfully',
       student: updated || body
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }
 
 export async function DELETE(request, { params }) {
-  try {
-    const { id } = params;
+  const cors = handleCors(request);
+  const { id } = params;
 
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
+  try {
     // 1. Delete from MongoDB Atlas
     try {
       await connectToDatabase();
@@ -132,8 +167,8 @@ export async function DELETE(request, { params }) {
       // ignore
     }
 
-    return NextResponse.json({ success: true, message: 'Student removed successfully' });
+    return NextResponse.json({ success: true, message: 'Student removed successfully' }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400, headers: cors.headers });
   }
 }

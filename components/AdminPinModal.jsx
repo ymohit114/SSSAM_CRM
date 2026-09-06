@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, X, ShieldAlert } from 'lucide-react';
+import { setStoredToken } from '@/lib/apiClient';
 
 export default function AdminPinModal({ isOpen, onClose, onSuccess }) {
   const [pin, setPin] = useState('');
@@ -36,6 +37,10 @@ export default function AdminPinModal({ isOpen, onClose, onSuccess }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Invalid PIN');
+
+      if (data.token) {
+        setStoredToken(data.token);
+      }
 
       onSuccess();
       onClose();

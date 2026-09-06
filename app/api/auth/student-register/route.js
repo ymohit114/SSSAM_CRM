@@ -2,8 +2,27 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import Student from '@/models/Student';
 import { connectToDatabase } from '@/lib/mongodb';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit registration attempts (10 req / min)
+  const rateLimit = checkRateLimit(request, {
+    maxRequests: 10,
+    windowMs: 60 * 1000,
+    keyPrefix: 'auth_student_register'
+  });
+
+  if (!rateLimit.allowed) {
+    return rateLimit.response;
+  }
+
   try {
     const body = await request.json();
     const { name, email, phone, password } = body;
@@ -12,14 +31,14 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         message: 'Name, Email, Mobile Number, and Password are all required.'
-      }, { status: 400 });
+      }, { status: 400, headers: cors.headers });
     }
 
     if (password.length < 4) {
       return NextResponse.json({
         success: false,
         message: 'Password must be at least 4 characters long.'
-      }, { status: 400 });
+      }, { status: 400, headers: cors.headers });
     }
 
     const cleanPhone = phone.trim();
@@ -40,12 +59,12 @@ export async function POST(request) {
           return NextResponse.json({
             success: false,
             message: `A student with this Mobile Number (${cleanPhone}) or Email is already registered and approved (${existingMongo.rollNo}). Please login using your password.`
-          }, { status: 409 });
+          }, { status: 409, headers: cors.headers });
         } else {
           return NextResponse.json({
             success: false,
             message: `An application with this Mobile Number (${cleanPhone}) is already submitted and pending admin approval.`
-          }, { status: 409 });
+          }, { status: 409, headers: cors.headers });
         }
       }
     } catch (dbErr) {
@@ -66,7 +85,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         message: localErr.message || 'An account with this Mobile Number or Email already exists.'
-      }, { status: 409 });
+      }, { status: 409, headers: cors.headers });
     }
 
     // 3. Sync to MongoDB Atlas
@@ -98,11 +117,8 @@ export async function POST(request) {
         email: newStudent.email,
         status: 'pending'
       }
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({
-      success: false,
-      message: err.message
-    }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }

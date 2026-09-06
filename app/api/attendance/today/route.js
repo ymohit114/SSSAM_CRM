@@ -5,11 +5,30 @@ import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getIndianDateTime } from '@/lib/indianTime';
 import { executeAutoPunchOut } from '@/lib/autoPunchOutService';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
 export async function GET(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'attendance_today' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     // Run background auto punch out for records past 9:00 PM or unclosed past days
     await executeAutoPunchOut().catch(e => console.warn('Auto punch out check in today route:', e.message));
@@ -90,8 +109,8 @@ export async function GET(request) {
       stats,
       logs,
       fullRoster
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }

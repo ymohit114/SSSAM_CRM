@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Users, FileSpreadsheet, Settings,
   Shield, LogOut, Radio, Clock, Lock, KeyRound, ArrowLeft, Menu, X, ShieldAlert, User
 } from 'lucide-react';
+import { setStoredToken, clearStoredToken } from '@/lib/apiClient';
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -71,7 +72,7 @@ export default function AdminLayout({ children }) {
       if (!res.ok) throw new Error(data.message || 'Invalid credentials');
 
       setAdminUser(data.user);
-      localStorage.setItem('sssam_admin', JSON.stringify(data.user));
+      setStoredToken(data.token, data.user);
       sessionStorage.setItem('sssam_admin_auth', 'true');
     } catch (err) {
       setLoginError(err.message || 'Login failed. Use admin@mohit.com / 1234567890');
@@ -82,8 +83,7 @@ export default function AdminLayout({ children }) {
 
   const handleLogout = () => {
     setAdminUser(null);
-    localStorage.removeItem('sssam_admin');
-    sessionStorage.removeItem('sssam_admin_auth');
+    clearStoredToken();
     router.push('/login?role=admin');
   };
 

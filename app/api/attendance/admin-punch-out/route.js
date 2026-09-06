@@ -5,17 +5,36 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getIndianDateTime, formatISTTime } from '@/lib/indianTime';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
+
 export async function POST(request) {
+  const cors = handleCors(request);
+
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 60, keyPrefix: 'admin_punch_out' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     const { studentId, date, punchOutTime, remarks, studySummary } = body;
 
     if (!studentId) {
-      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Student ID is required.' }, { status: 400, headers: cors.headers });
     }
 
     const ist = getIndianDateTime();
@@ -55,7 +74,7 @@ export async function POST(request) {
     }
 
     if (!student) {
-      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404, headers: cors.headers });
     }
 
     // 1. Update Local DB
@@ -138,8 +157,8 @@ export async function POST(request) {
       success: true,
       message: `Successfully punched out ${student.name} at ${formatISTTime(finalPunchOutTime)}.`,
       record: finalRecord
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message || 'Failed to punch out student.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message || 'Failed to punch out student.' }, { status: 500, headers: cors.headers });
   }
 }

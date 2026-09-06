@@ -3,16 +3,35 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import Attendance from '@/models/Attendance';
 import { connectToDatabase } from '@/lib/mongodb';
+import { verifyAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rateLimiter';
+import { handleCors } from '@/lib/cors';
+
+export async function OPTIONS(request) {
+  return handleCors(request).response;
+}
 
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const date = searchParams.get('date');
-    const studentId = searchParams.get('studentId');
-    const status = searchParams.get('status');
+  const cors = handleCors(request);
 
+  // Rate limit
+  const rateLimit = checkRateLimit(request, { maxRequests: 120, keyPrefix: 'attendance_history_get' });
+  if (!rateLimit.allowed) return rateLimit.response;
+
+  const { searchParams } = new URL(request.url);
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  const date = searchParams.get('date');
+  const studentId = searchParams.get('studentId');
+  const status = searchParams.get('status');
+
+  // Authorization: Student can only view self; Admin can view all
+  const auth = verifyAuth(request, studentId ? 'any' : 'admin', studentId);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
+  try {
     let logs = [];
 
     // 1. Try querying MongoDB Atlas
@@ -64,13 +83,21 @@ export async function GET(request) {
       success: true,
       count: logs.length,
       logs
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }
 
 export async function DELETE(request) {
+  const cors = handleCors(request);
+
+  // Authorization: Requires Admin
+  const auth = verifyAuth(request, 'admin');
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
@@ -133,8 +160,8 @@ export async function DELETE(request) {
       success: true,
       message: 'Attendance log(s) deleted successfully.',
       deletedCount
-    });
+    }, { headers: cors.headers });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 500, headers: cors.headers });
   }
 }
